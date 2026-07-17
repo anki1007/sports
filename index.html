@@ -3058,7 +3058,7 @@ function buildForecast(planets, aspects, rules, D, J){
 //   up/down). Nifty=Sun, BankNifty=Moon (Rule Indices.jpeg #20).
 // ═══════════════════════════════════════════════════════════════════
 const NIFTY_NATAL = { y:1992, mo:11, d:27, istH: 11 + 43/60,
-                      lat:19.0760, lon:72.8777, label:'NIFTY · 27-Nov-1992 · 11:43 IST · Mumbai' };
+                      lat:19.0760, lon:72.8777, label:'DEFAULT EVENT CHART · 27-Nov-1992 · 11:43 IST · Mumbai — set your team\'s foundation date in Team Horoscope' };
 const BHADRA_LOKA = {0:'Swarga',1:'Swarga',2:'Swarga',7:'Swarga',
                      5:'Patala',6:'Patala',8:'Patala',9:'Patala',
                      3:'Prithvi',4:'Prithvi',10:'Prithvi',11:'Prithvi'};
@@ -3164,9 +3164,22 @@ function computeBhadra(dateStr, rMin, ayMode){
 }
 
 let _natalCache = {};
+// Team/club natal chart — user-configurable via the Team Horoscope tab
+// (S.natalDate = club foundation / captain DOB etc.). Falls back to defaults.
+function getNatalCfg(){
+  const d=(typeof S!=='undefined')&&dobParts_&&dobParts_(S.natalDate);
+  if(d){
+    const t=parseFloat(S.natalTime); const istH=isNaN(t)?12:t;
+    return {y:d.y,mo:d.mo,d:d.dy,istH,lat:LAT,lon:LON,
+            label:(S.natalName||'TEAM')+' · '+S.natalDate+(S.natalTime?' · '+mtt(istH*60):'')};
+  }
+  return NIFTY_NATAL;
+}
+function dobParts_(s){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');return m?{y:+m[1],mo:+m[2],dy:+m[3]}:null;}
 function computeNatal(ayMode){
-  if(_natalCache[ayMode]) return _natalCache[ayMode];
-  const N=NIFTY_NATAL;
+  const cfgKey=ayMode+'|'+((typeof S!=='undefined'&&(S.natalDate||''))+'|'+(S.natalTime||'')+'|'+(S.natalName||''));
+  if(_natalCache[cfgKey]) return _natalCache[cfgKey];
+  const N=getNatalCfg();
   const sLAT=LAT, sLON=LON;
   LAT=N.lat; LON=N.lon;
   const J=JD(N.y,N.mo,N.d,N.istH);
@@ -3188,7 +3201,7 @@ function computeNatal(ayMode){
   LAT=sLAT; LON=sLON;
   const out={J,ay,ascSid,ascSign:getSign(ascSid),ascSignIdx,planets,label:N.label,
              dayLord:DAY_LORDS[new Date(N.y,N.mo-1,N.d).getDay()]};
-  _natalCache[ayMode]=out;
+  _natalCache[cfgKey]=out;
   return out;
 }
 
@@ -4039,7 +4052,7 @@ function buildIndexForecast(D){
 // → return the previous result instantly instead of recomputing.
 let _computeAllMemo={key:null,val:null};
 function computeAll(dateStr,timeIST,ayMode){
-  const _memoKey=[dateStr,timeIST,ayMode,(typeof S!=='undefined'&&S.session)||'mkt',(typeof S!=='undefined'&&S.loc)||'Mumbai',LAT,LON,isAELoaded()?'ae':'kep'].join('|');
+  const _memoKey=[dateStr,timeIST,ayMode,(typeof S!=='undefined'&&S.session)||'mkt',(typeof S!=='undefined'&&S.loc)||'Mumbai',LAT,LON,isAELoaded()?'ae':'kep',(typeof S!=='undefined'&&(S.natalDate||''))+'~'+(typeof S!=='undefined'&&(S.natalTime||''))+'~'+(typeof S!=='undefined'&&(S.natalName||''))].join('|');
   if(_computeAllMemo.key===_memoKey) return _computeAllMemo.val;
   const dp=dateStr.split('-').map(Number);
   const J=JD(dp[0],dp[1],dp[2],timeIST);
@@ -4420,7 +4433,7 @@ function rNav(){
 
 function rMain(){
   const sp=k=>()=>window[k]?window[k]():'<div style="padding:20px;color:var(--tx3)">Loading module…</div>';
-  const fns={match:sp('tMatch'),muhurat:sp('tMuhurat'),numero:sp('tNumero'),worldclock:sp('tWorldClock'),shar:()=>tSharParivartan('shar'),kranti:()=>tSharParivartan('kranti'),transit:tTransit,kundali:tKundali,bhav:tBhavphal,ashtaka:tAshtaka,kp:tKP,charts:tCharts,planlat:tPlanetLat,planlon:tPlanetLon,panchak:tPanchak};
+  const fns={match:sp('tMatch'),muhurat:sp('tMuhurat'),numero:sp('tNumero'),worldclock:sp('tWorldClock'),shar:()=>tSharParivartan('shar'),kranti:()=>tSharParivartan('kranti'),transit:tTransit,kundali:tKundali,bhav:tBhavphal,ashtaka:tAshtaka,kp:tKP,charts:tCharts,planlat:sp('tAstroLat'),planlon:sp('tAstroLon'),panchak:tPanchak};
   document.getElementById('MAIN').innerHTML=(fns[S.tab]||sp('tMatch'))();
   if(window.sportsAfterRender) window.sportsAfterRender();
   collapsibleInit();
@@ -6214,7 +6227,7 @@ function tKP(){
         <tbody>
           ${houseCusps.map((lon,i)=>{
             const h=i+1,sg=getSign(lon),nk=getNak(lon),sb=getSub(lon);
-            const sigs={1:'Lagna / Market mood',2:'Wealth / Funds',3:'Short moves / Comm.',4:'Base / Support',5:'Speculation / F&O ★',6:'Competition / Losses',7:'Contra / Opposition',8:'Sudden events / Risk',9:'Fortune / Bull runs',10:'Market trend / Career',11:'Gains / Profits ★★',12:'Expenses / Short losses'};
+            const sigs={1:'Lagna / Team spirit',2:'Resources / Squad depth',3:'Effort / Courage',4:'Home ground / Base',5:'Flair / Performance ★',6:'Rivalry / Injuries',7:'Opponent / Contest',8:'Upsets / Sudden risk',9:'Fortune / Winning runs',10:'Result / Standing',11:'Wins / Gains ★★',12:'Losses / Setbacks'};
             const key=[5,11].includes(h);
             return`<tr ${key?'style="background:var(--bg3)"':''}>
               <td style="color:${key?'var(--acc)':'var(--tx1)'};font-weight:${key?700:400}">H${h}${key?' ★':''}</td>
@@ -10505,7 +10518,7 @@ function tSharParivartan(mode){
       if(isShar){
         const latCol = c.latDir==='N'?'var(--jupi)':'var(--merc)';
         const flip = c.latFlip?'background:var(--neut3);border:1px solid var(--neut)':'';
-        return `<td style="font-family:monospace;font-size:11.5px;color:${latCol};${flip}${_m.st}" title="${c.latFlip?'SHAR PARIVARTAN — latitude crossed 0 (market driven by this planet)':''}">${c.lat}${c.latDir}${_m.bg}</td>`;
+        return `<td style="font-family:monospace;font-size:11.5px;color:${latCol};${flip}${_m.st}" title="${c.latFlip?'SHAR PARIVARTAN — latitude crossed 0 (the day\'s energy is driven by this planet)':''}">${c.lat}${c.latDir}${_m.bg}</td>`;
       } else {
         const decCol = c.decDir==='N'?'var(--jupi)':'var(--merc)';
         return `<td style="font-family:monospace;font-size:11.5px;color:${decCol};${c.parColor?'background:'+c.parColor+'33;border:1px solid '+c.parColor:''}${_m.st}" title="${c.parWith?'Declination parallel with '+c.parWith+' (|Δdecl|<1°)':''}">${c.dec}${c.decDir}${_m.bg}</td>`;
@@ -10518,7 +10531,7 @@ function tSharParivartan(mode){
     ? '⟐ SHAR — Monthly Ecliptic Latitude (Shar) of Planets'
     : '◓ KRANTI — Monthly Declination (Kranti) of Planets';
   const desc = isShar
-    ? `<b style="color:var(--neut)">SHAR PARIVARTAN</b> = a planet's ecliptic latitude (Shar) crossing 0° (North ↔ South). On the crossing day that planet drives the market and its aspects & all three Vedh become ineffective — the strongest signal. Moon crosses twice a month; big / slow planets cross when nearer Earth. <b style="color:var(--neut)">Yellow cell</b> = latitude crossed 0° (Shar Parivartan). Sun / Rahu / Ketu have no latitude (Shar 0).`
+    ? `<b style="color:var(--neut)">SHAR PARIVARTAN</b> = a planet's ecliptic latitude (Shar) crossing 0° (North ↔ South). On the crossing day that planet dominates the day's energy and its aspects & all three Vedh become ineffective — the strongest signal. Moon crosses twice a month; big / slow planets cross when nearer Earth. <b style="color:var(--neut)">Yellow cell</b> = latitude crossed 0° (Shar Parivartan). Sun / Rahu / Ketu have no latitude (Shar 0).`
     : `CHAPTER 21: a planet changing to <b style="color:var(--bear)">NORTH</b> declination → <b style="color:var(--bear)">Bearishness</b>; to <b style="color:var(--bull)">SOUTH</b> → <b style="color:var(--bull)">Bullishness</b> (continues a long time). During a declination change, aspects & all three Vedh become ineffective — this is the strongest signal. Reverse the effect if the planet is Combust / Retrograde / Debilitated. Moon changes twice a month; big planets change when nearer Earth.`;
   const note = isShar
     ? 'Shar = ecliptic latitude (N/S of the ecliptic plane). Orange = North, Green = South. A yellow cell marks the day latitude crosses 0° (Shar Parivartan). Sun / Rahu / Ketu always Shar 0. Snapshot ~09:30 IST.'
@@ -10564,9 +10577,14 @@ function tKundali(){
   return`
 <div style="display:flex;flex-direction:column;gap:10px">
   <div class="g2">
-    <div class="pnl"><div class="ph"><span class="dot"></span>☉ NIFTY NATAL — ${nat.label}</div>
+    <div class="pnl"><div class="ph"><span class="dot"></span>☉ TEAM NATAL — ${nat.label}</div>
       <div class="pb">
-        <div style="display:flex;justify-content:center">${northChart(nat.planets, nat.ascSignIdx, 'NIFTY NATAL D1', '27-Nov-1992 11:43 North-Indian whole-sign')}</div>
+        <div class="ctrl-row" style="flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <div class="cg"><span class="cl">TEAM / CLUB / CAPTAIN</span><input type="text" class="ci w130" value="${S.natalName||''}" placeholder="e.g. Mumbai Indians" onchange="gs({natalName:this.value})"></div>
+          <div class="cg"><span class="cl">FOUNDATION / DOB</span><input type="date" class="ci w130" value="${S.natalDate||''}" onchange="gs({natalDate:this.value})"></div>
+          <div class="cg"><span class="cl">TIME (decimal h)</span><input type="text" class="ci w80" value="${S.natalTime||''}" placeholder="12.5 = 12:30" onchange="gs({natalTime:this.value})"></div>
+        </div>
+        <div style="display:flex;justify-content:center">${northChart(nat.planets, nat.ascSignIdx, 'TEAM NATAL D1', 'North-Indian whole-sign')}</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0;font-size:11px">
           <span><span class="ml">LAGNA</span> <b class="ca">${nat.ascSign.sign} ${dmsC(nat.ascSign.deg)}</b></span>
           <span><span class="ml">DAY LORD</span> <b style="color:${PC[nat.dayLord]}">${nat.dayLord}</b></span>
@@ -10574,17 +10592,17 @@ function tKundali(){
         <div class="ts"><table class="tbl"><thead><tr><th>Planet</th><th>Sign</th><th>House</th><th>Nakshatra</th><th>R</th></tr></thead><tbody>${natalRows}</tbody></table></div>
       </div>
     </div>
-    <div class="pnl"><div class="ph" style="justify-content:space-between"><span><span class="dot"></span>◇ INTRADAY KUNDALI · 5-MIN</span>
+    <div class="pnl"><div class="ph" style="justify-content:space-between"><span><span class="dot"></span>◇ MATCH-TIME KUNDALI · 5-MIN</span>
         <select class="ci" style="font-size:11.5px;padding:2px 4px" onchange="gs({time5:this.value})">${opts.join('')}</select></div>
       <div class="pb">
-        <div style="display:flex;justify-content:center">${northChart(mom.planets, mom.lagS, 'INTRADAY 5-MIN', S.date+' '+mtt(parseFloat(t5)*60)+' North-Indian')}</div>
+        <div style="display:flex;justify-content:center">${northChart(mom.planets, mom.lagS, 'MATCH-TIME 5-MIN', S.date+' '+mtt(parseFloat(t5)*60)+' North-Indian')}</div>
         <div style="font-size:11px;margin:8px 0"><span class="ml">LAGNA</span> <b class="ca">${mom.ascSign.sign} ${dmsC(mom.ascSign.deg)}</b> · <span class="ml">MOON</span> <b style="color:${PC.Moon}">${mom.planets.find(p=>p.name==='Moon').sign}</b></div>
-        <div style="color:var(--acc);font-size:11.5px;font-weight:700;margin-bottom:4px">TRANSIT OVER NATAL (today's push on Nifty · score ${D.natalTransit?D.natalTransit.score:0})</div>
+        <div style="color:var(--acc);font-size:11.5px;font-weight:700;margin-bottom:4px">TRANSIT OVER NATAL (today's push on the team chart · score ${D.natalTransit?D.natalTransit.score:0})</div>
         <div class="ts"><table class="tbl"><thead><tr><th>Planet</th><th>Natal house</th><th>Push</th><th>Note</th></tr></thead><tbody>${tr||'<tr><td colspan=4 style="color:var(--tx3)">no strong transit hits</td></tr>'}</tbody></table></div>
       </div>
     </div>
   </div>
-  <div class="pnl"><div class="ph"><span class="dot"></span>⏱ INTRADAY 5-MIN LAGNA / MOON TRANSITIONS · ${mtt(SRk.startMin)}→${mtt(SRk.endMin)} (⟲ = inflection: lagna or nakshatra change)</div>
+  <div class="pnl"><div class="ph"><span class="dot"></span>⏱ 5-MIN LAGNA / MOON TRANSITIONS · ${mtt(SRk.startMin)}→${mtt(SRk.endMin)} (⟲ = inflection: lagna or nakshatra change)</div>
     <div class="ts" style="max-height:340px;overflow:auto"><table class="tbl"><thead><tr><th>Time</th><th>Lagna</th><th>Moon Rashi</th><th>Nakshatra</th><th>Sub Lord</th><th>Pada</th></tr></thead><tbody>${slotRows}</tbody></table></div>
   </div>
 </div>`;
@@ -10600,11 +10618,11 @@ function tBhavphal(){
     }).join('');
     const mc=bv.marketScore;
     return`<div class="pnl"><div class="ph" style="justify-content:space-between"><span><span class="dot"></span>${title}</span>
-        <span class="pill ${mc>0?'pb-b':mc<0?'pb-r':'pb-n'}">MARKET ${mc>0?'+':''}${mc}</span></div>
+        <span class="pill ${mc>0?'pb-b':mc<0?'pb-r':'pb-n'}">ENERGY ${mc>0?'+':''}${mc}</span></div>
       <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">${sub}</div>
       <div class="ts"><table class="tbl"><thead><tr><th>House</th><th>Sign</th><th>Lord</th><th>Lord in</th><th>Occupants</th><th>Score</th><th>Verdict</th><th>Sutra factors</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }
-  // -- Sun-Jupiter aspect (degree) for the daily transit chart AND the Nifty natal chart --
+  // -- Sun-Jupiter aspect (degree) for the daily transit chart AND the team natal chart --
   const SJ_GLY={0:'☌',45:'∠',90:'□',135:'⚼',180:'☍'};
   function sjFold(rel){ rel=((rel%360)+360)%360; return rel>180?360-rel:rel; }
   function sjAspectRow(arr, label, sub, withMotion){
@@ -10628,10 +10646,10 @@ function tBhavphal(){
       <td>${motion}</td></tr>`;
   }
   const sjAspTable = `<div class="pnl"><div class="ph"><span class="dot"></span>☉–♃ SUN–JUPITER ASPECT — degree separation &amp; nearest 0 / 45 / 90 / 135 / 180° aspect</div>
-    <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">Geocentric Sun–Jupiter angular separation (folded to 0–180°) and the nearest tracked aspect, for today's transit chart and the Nifty natal chart. Orb = distance from the exact aspect (EXACT ≤1°, tight ≤3°, in orb ≤6°). Motion: is the transit Sun applying to or separating from the aspect. Separation is frame-independent (identical in Lahiri-sidereal &amp; tropical).</div>
+    <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">Geocentric Sun–Jupiter angular separation (folded to 0–180°) and the nearest tracked aspect, for today's transit chart and the team natal chart. Orb = distance from the exact aspect (EXACT ≤1°, tight ≤3°, in orb ≤6°). Motion: is the transit Sun applying to or separating from the aspect. Separation is frame-independent (identical in Lahiri-sidereal &amp; tropical).</div>
     <div class="ts"><table class="tbl"><thead><tr><th>Chart</th><th>☉ Sun</th><th>♃ Jupiter</th><th>Separation</th><th>Nearest aspect</th><th>Orb</th><th>Motion</th></tr></thead><tbody>
       ${sjAspectRow(D.planets, 'Today (transit)', S.date, true)}
-      ${sjAspectRow(D.natal&&D.natal.planets, 'Nifty Natal', '27-Nov-1992 · 11:43 IST', false)}
+      ${sjAspectRow(D.natal&&D.natal.planets, 'Team Natal', (D.natal&&D.natal.label)||'', false)}
     </tbody></table></div></div>`;
 
   // ── ALL-PLANET ASPECT MATRIX — triangular aspectarian; same 0/45/90/135/180° method as the ☉–♃ panel ──
@@ -10666,12 +10684,12 @@ function tBhavphal(){
   return`
 <div style="display:flex;flex-direction:column;gap:10px">
   <div class="pnl"><div class="pb" style="font-size:11.5px;color:var(--tx2)">
-    <b style="color:var(--acc)">Bhav-Phal Sutra (bhavphal.md):</b> house lord in 6/8/12 weakens the house; in kendra(1,4,7,10)/trikona(1,5,9) it prospers; in 2/3/11 benefic. Lord combust(अस्त)/retrograde(वक्री) → reduction/delay. Lord within 5° of Rahu/Ketu → reduction. Natural malefics (Sun,Mars,Saturn,Rahu,Ketu) harm where they sit/aspect — except in upachaya 3/6/11. Market read: bull houses ▲ 1·2·5·9·11 vs bear houses ▼ 6·8·12.
+    <b style="color:var(--acc)">Bhav-Phal Sutra (bhavphal.md):</b> house lord in 6/8/12 weakens the house; in kendra(1,4,7,10)/trikona(1,5,9) it prospers; in 2/3/11 benefic. Lord combust(अस्त)/retrograde(वक्री) → reduction/delay. Lord within 5° of Rahu/Ketu → reduction. Natural malefics (Sun,Mars,Saturn,Rahu,Ketu) harm where they sit/aspect — except in upachaya 3/6/11. Sports read: favourable houses ▲ 1·2·5·9·11 vs adverse houses ▼ 6·8·12.
   </div></div>
   ${sjAspTable}
   ${pairAspTable}
   ${tbl(D.bhavDay, '⌂ BHAV-PHAL — TODAY ('+S.date+') chart', 'Intraday house-strength on the day chart — drives the daily push.')}
-  ${tbl(D.bhavNatal, '⌂ BHAV-PHAL — NIFTY NATAL chart', 'Structural backdrop strength of the Nifty birth chart — the long-term bias the day modulates.')}
+  ${tbl(D.bhavNatal, '⌂ BHAV-PHAL — TEAM NATAL chart', 'Structural backdrop strength of the team natal chart — the long-term bias the day modulates. Set the foundation date in Team Horoscope.')}
 </div>`;
 }
 
@@ -10961,7 +10979,7 @@ function tPanchak(){
           ${ruleRow('6/7','Weekday Panchak begins',P.R.r67)}
           ${ruleRow('8','Indra / Vaidhriti / Vyatipata yoga',P.R.r8)}
         </tbody></table></div>
-      <div style="padding:6px 12px;font-size:10.5px;color:var(--tx3)">The 5 Panchak days (rules 1 & 2 look at whether every day is uniformly bull/bear — check each in Day Forecast):
+      <div style="padding:6px 12px;font-size:10.5px;color:var(--tx3)">The 5 Panchak days (rules 1 & 2 look at whether every day is uniformly positive/negative):
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px">${P.days.map(d=>`<span class="pill pb-a" style="font-size:10px">${WDNAME[d.wd]} ${d.date.slice(5)} · ${d.nak}${PANCHAK_GOOD_YOGAS.has(d.yoga)?` · <b style="color:var(--bull)">${d.yoga}</b>`:''}</span>`).join('')}</div></div>
     </div>`;
   }
@@ -10991,7 +11009,7 @@ function tPanchak(){
         <td style="font-weight:800;color:${c.active?'var(--bear)':'var(--tx3)'}">${c.active?'⚠ ACTIVE':'—'}</td>
         <td style="color:var(--tx3);font-size:11px">${c.note}</td></tr>`).join('')}
     </tbody></table></div>
-    <div style="padding:6px 12px;font-size:10.5px;color:var(--tx3)">House position counts the other planet's sign from Mars's sign. Dwidwadash = 2nd/12th (adjacent signs); Shadashtak = 6th/8th; Kendra = 4th/10th; Trine = 5th/9th. All are read as bearish for Mars combinations.</div>
+    <div style="padding:6px 12px;font-size:10.5px;color:var(--tx3)">House position counts the other planet's sign from Mars's sign. Dwidwadash = 2nd/12th (adjacent signs); Shadashtak = 6th/8th; Kendra = 4th/10th; Trine = 5th/9th. All are read as negative-energy windows for Mars combinations.</div>
   </div>`;
   return `<div style="display:flex;flex-direction:column;gap:10px">${statusCard}${rulesRef}${combosPanel}</div>`;
 }
@@ -12592,6 +12610,78 @@ window.tWorldClock=function(){
       <span>Lagna <b style="color:var(--acc)">${D.ascSign.sign} ${dmsC(D.ascSign.deg)}</b></span>
     </div>`);
 };
+
+// ── TABS: PLANET LATITUDE / LONGITUDE — pure ephemeris charts ──────
+// Replaces the old price-overlay charts: plots geoLat/geoLon from the
+// inlined VSOP87/ELP engine over a selectable window. No market data.
+const AL_BODIES=['Moon','Mercury','Venus','Mars','Jupiter','Saturn','Rahu'];
+function alSeries(mode){
+  const dp=dobParts(S.date)||{y:2026,mo:1,dy:1};
+  const J0=JD(dp.y,dp.mo,dp.dy,12);
+  const span=parseInt(S.alRange||'180',10);           // days total
+  const back=Math.round(span/3);
+  const step=span>200?2:1;
+  const bodies=(S.alBodies?S.alBodies.split(','):['Moon','Mercury','Venus','Mars']).filter(b=>AL_BODIES.includes(b));
+  const out={};
+  for(const b of bodies){
+    const pts=[];
+    for(let d=-back;d<=span-back;d+=step){
+      const J=J0+d;
+      pts.push({d, v: mode==='lat'?geoLat(b,J):n360(geoLon(b,J)-getAyanamsa(J,S.ayMode))});
+    }
+    out[b]=pts;
+  }
+  return {bodies,out,back,span,step};
+}
+function alChart(mode){
+  const {bodies,out,back,span}=alSeries(mode);
+  const W=1060,H=430,L=52,R=14,T=16,B=30,pw=W-L-R,ph=H-T-B;
+  let ymin,ymax;
+  if(mode==='lat'){
+    let m=0; bodies.forEach(b=>out[b].forEach(p=>{m=Math.max(m,Math.abs(p.v));}));
+    m=Math.max(1,Math.ceil(m)); ymin=-m; ymax=m;
+  } else { ymin=0; ymax=360; }
+  const X=d=>L+((d+back)/span)*pw, Y=v=>T+(1-(v-ymin)/(ymax-ymin))*ph;
+  const paths=bodies.map(b=>{
+    let dstr='',prev=null;
+    for(const p of out[b]){
+      const brk=mode==='lon'&&prev!==null&&Math.abs(p.v-prev)>180;
+      dstr+=(dstr===''||brk?'M':'L')+X(p.d).toFixed(1)+' '+Y(p.v).toFixed(1)+' ';
+      prev=p.v;
+    }
+    return`<path d="${dstr}" fill="none" stroke="${({Sun:'#ffb300',Moon:'#90caf9',Mercury:'#66bb6a',Venus:'#f48fb1',Mars:'#ef5350',Jupiter:'#ffa726',Saturn:'#78909c',Rahu:'#ab47bc'})[b]||'#888'}" stroke-width="1.6"/>`;
+  }).join('');
+  const gridY=mode==='lat'
+    ? [...Array(2*Math.abs(ymax)+1)].map((_,i)=>ymin+i).filter(v=>Number.isInteger(v))
+    : [0,60,120,180,240,300,360];
+  const grid=gridY.map(v=>`<line x1="${L}" y1="${Y(v)}" x2="${W-R}" y2="${Y(v)}" stroke="var(--bd)" stroke-width="${v===0&&mode==='lat'?1.4:0.5}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--tx3)">${v}°</text>`).join('');
+  const months=[]; for(let d=-back;d<=span-back;d+=Math.max(15,Math.round(span/12))){
+    const dt=new Date(S.date+'T12:00:00'); dt.setDate(dt.getDate()+d);
+    months.push(`<line x1="${X(d)}" y1="${T}" x2="${X(d)}" y2="${H-B}" stroke="var(--bd)" stroke-width="0.4"/><text x="${X(d)}" y="${H-10}" text-anchor="middle" font-size="9.5" fill="var(--tx3)">${dt.getDate()}/${dt.getMonth()+1}</text>`);}
+  const todayX=X(0);
+  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--bg1);border:1px solid var(--bd);border-radius:4px">${grid}${months.join('')}
+    <line x1="${todayX}" y1="${T}" x2="${todayX}" y2="${H-B}" stroke="var(--acc)" stroke-dasharray="4 3" stroke-width="1.2"/>
+    <text x="${todayX+4}" y="${T+12}" font-size="10" fill="var(--acc)">${S.date}</text>${paths}</svg>`;
+}
+function alTab(mode){
+  const bodies=S.alBodies?S.alBodies.split(','):['Moon','Mercury','Venus','Mars'];
+  const btn=(b)=>{
+    const on=bodies.includes(b);
+    const next=on?bodies.filter(x=>x!==b):bodies.concat(b);
+    return`<button onclick="gs({alBodies:'${next.join(',')}'})" class="nb${on?' on':''}" style="padding:3px 12px;border:1px solid var(--bd2)">${b}</button>`;};
+  const rbtn=(d,l)=>`<button onclick="gs({alRange:'${d}'})" class="nb${(S.alRange||'180')===String(d)?' on':''}" style="padding:3px 10px;border:1px solid var(--bd2)">${l}</button>`;
+  return pnl(mode==='lat'
+      ? 'PLANET ECLIPTIC LATITUDE (SHAR) — N/S of the ecliptic · zero-crossing = Shar Parivartan (strongest day-energy signal)'
+      : 'PLANET SIDEREAL LONGITUDE — 0–360° through the zodiac (breaks at 360→0 wrap)',`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <span class="cl">PLANETS</span>${AL_BODIES.map(btn).join('')}
+      <span class="cl" style="margin-left:14px">WINDOW</span>${rbtn(90,'90d')}${rbtn(180,'180d')}${rbtn(365,'1Y')}
+    </div>
+    ${alChart(mode)}
+    <div style="font-size:10.5px;color:var(--tx3);margin-top:6px">Computed live from the inlined VSOP87/ELP astronomy engine at the selected venue &amp; ayanamsa. Dashed line = selected date.</div>`);
+}
+window.tAstroLat=()=>alTab('lat');
+window.tAstroLon=()=>alTab('lon');
 
 // after every render: async fills
 window.sportsAfterRender=function(){ if(S.tab==='match') setTimeout(loadWeather,60); };
