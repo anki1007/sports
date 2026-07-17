@@ -12567,38 +12567,117 @@ window.tMuhurat=function(){
   pnl('PLANETARY HORA (24h)',`<div style="display:flex;flex-wrap:wrap;gap:6px">${buildPlanetHours24(S.date).map(h=>`<span class="pill pb-n" style="font-family:monospace">${h.seg} ${mtt(h.sm)} <b style="color:${pc(h.planet)}">${h.planet}</b></span>`).join('')}</div>`);
 };
 
-// ── TAB: NUMEROLOGY ────────────────────────────────────────────────
+// ── MULTI-SYSTEM NUMEROLOGY HELPERS ────────────────────────────────
+const PYTHAGOREAN={a:1,b:2,c:3,d:4,e:5,f:6,g:7,h:8,i:9,j:1,k:2,l:3,m:4,n:5,o:6,p:7,q:8,r:9,s:1,t:2,u:3,v:4,w:5,x:6,y:7,z:8};
+const VOWELS=new Set(['a','e','i','o','u']);
+function reduceMaster(n){ // keep master numbers 11/22/33
+  while(n>9&&n!==11&&n!==22&&n!==33)n=digSum(n);
+  return n;
+}
+function pythName(name,filter){ // filter: null=all, 'v'=vowels, 'c'=consonants
+  let t=0;
+  for(const ch of (name||'').toLowerCase()){
+    if(!PYTHAGOREAN[ch])continue;
+    if(filter==='v'&&!VOWELS.has(ch))continue;
+    if(filter==='c'&&VOWELS.has(ch))continue;
+    t+=PYTHAGOREAN[ch];
+  }
+  return {total:t,num:reduceMaster(t)};
+}
+function lifePath(p){ // Pythagorean: reduce day, month, year separately, keep masters
+  return reduceMaster(reduceMaster(p.dy)+reduceMaster(p.mo)+reduceMaster(digSum(p.y)));
+}
+// Chaldean compound-number meanings (classic Cheiro, condensed)
+const CHALDEAN_COMPOUND={10:'Wheel of Fortune — self-confident rise, honour',11:'Clenched Hand — hidden trials, treachery from others',12:'The Sacrifice — anxiety of mind, victim of plots',13:'Regeneration — upheaval & change; power if well used',14:'Movement — risk from natural forces; lucky with money',15:'The Magician — eloquence, gifts, strong personal magnetism',16:'Shattered Citadel — strange fatality, guard against accidents',17:'Star of the Magi — rises superior in spirit, name lives after',18:'Spirit of Conflict — bitter quarrels, deception; needs care',19:'Prince of Heaven — sun of happiness, success & honour',20:'The Awakening — new purpose, powerful call to action',21:'Crown of the Magi — advancement, honours, final victory',22:'Good Man Blinded — illusion & delusion; wake to reality',23:'Royal Star of the Lion — success & help from superiors',24:'Fortune — gain through love & rank, help from others',25:'Discernment — strength gained through experience & observation',26:'Grave Warnings — disasters through bad partnerships; save wisely',27:'The Sceptre — command, authority; reap the harvest of intellect',28:'Trusting Sheep — promising starts, guard against loss & redo',29:'Grace under Trial — uncertainties, deception from others',30:'Thoughtful Deduction — mental superiority, retrospection',31:'The Recluse — self-contained, isolation, genius unrecognised',32:'Communication — magical power, sway over crowds if plans kept',33:'(as 24) Fortune — gain through affection & alliances',34:'(as 25) strength through experience',35:'(as 26) partnership warnings',36:'(as 27) authority & command',37:'Good friendships & partnerships, luck in unions',38:'(as 29) trials & deception',39:'(as 30) mental superiority',40:'(as 31) the recluse',41:'(as 32) sway over the many',42:'(as 24) fortune through alliances',43:'Revolution & upheaval — unconventional, repeated failures',44:'(as 26) grave warnings',45:'(as 27) the sceptre',46:'(as 37) lucky partnerships',47:'(as 29) grace under trial',48:'(as 30) thoughtful deduction',49:'(as 31) the recluse',50:'(as 32) communication power',51:'Warrior Star — sudden advancement in struggles; beware enemies',52:'(as 25) strength through experience'};
+// Lo Shu planes / arrows analysis
+const LOSHU_PLANES=[
+  {n:'Mind plane (4-9-2)',d:[4,9,2],has:'thinker — memory, analysis, vision',miss:'weak visualisation'},
+  {n:'Emotional plane (3-5-7)',d:[3,5,7],has:'balanced feelings, artistic spirit',miss:'emotional sensitivity untrained'},
+  {n:'Practical plane (8-1-6)',d:[8,1,6],has:'grounded doer — materially able',miss:'less practical follow-through'},
+  {n:'Thought arrow (1-2-3)',d:[1,2,3],has:'planner — clear thought to action',miss:'scattered planning'},
+  {n:'Will arrow (4-5-6)',d:[4,5,6],has:'strong will & persistence',miss:'frustrated will (needs discipline)'},
+  {n:'Action arrow (7-8-9)',d:[7,8,9],has:'high activity & execution',miss:'inertia — slow to act'},
+  {n:'Determination diagonal (1-5-9)',d:[1,5,9],has:'determination & perseverance',miss:'gives up under pressure'},
+  {n:'Spiritual diagonal (3-5-7)',d:[3,5,7],has:'compassion & spiritual poise',miss:'—'},
+];
+const NUM_MEANING={1:'Leader · Sun — independent, pioneering captaincy',2:'Diplomat · Moon — intuitive, team-binding',3:'Creator · Jupiter — expansive, optimistic play',4:'Builder · Rahu — unorthodox, disciplined grinder',5:'Communicator · Mercury — fast, adaptable all-rounder',6:'Harmoniser · Venus — stylish, crowd-favourite',7:'Analyst · Ketu — instinctive, mystery performer',8:'Executor · Saturn — patient, big-match temperament',9:'Warrior · Mars — aggressive, high-energy finisher',11:'Master Intuitive — inspirational under lights',22:'Master Builder — dynasty-scale achievement',33:'Master Teacher — selfless leadership'};
+
 window.tNumero=function(){
-  const N=numerologyOf(S.numName||'Sports Astral',S.numDob||'2000-01-01',S.numGender||'M');
-  const cell=(lbl,val,extra)=>`<div style="min-width:120px"><div style="font-size:10px;color:var(--tx3)">${lbl}</div><div style="font-size:20px;font-weight:800;color:var(--acc)">${val??'—'}</div>${extra?`<div style="font-size:10px;color:var(--tx2)">${extra}</div>`:''}</div>`;
-  const loShu=[[4,9,2],[3,5,7],[8,1,6]].map(row=>`<tr>${row.map(n=>`<td style="width:46px;height:42px;text-align:center;border:1px solid var(--bd2);font-family:monospace;font-size:15px;color:${(N.loShu||{})[n]?'var(--bull)':'var(--tx3)'}">${(N.loShu||{})[n]?String(n).repeat(N.loShu[n]):'·'}</td>`).join('')}</tr>`).join('');
+  const name=S.numName||'Sports Astral', dob=S.numDob||'2000-01-01';
+  const N=numerologyOf(name,dob,S.numGender||'M');
+  const p=dobParts(dob);
+  const cell=(lbl,val,extra,col)=>`<div style="min-width:118px"><div style="font-size:10px;color:var(--tx3)">${lbl}</div><div style="font-size:20px;font-weight:800;color:${col||'var(--acc)'}">${val??'—'}</div>${extra?`<div style="font-size:10px;color:var(--tx2);max-width:170px">${extra}</div>`:''}</div>`;
+  // ── Pythagorean ──
+  const lp=p?lifePath(p):null;
+  const expr=pythName(name), soul=pythName(name,'v'), pers=pythName(name,'c');
+  const bday=p?reduceMaster(p.dy):null;
+  const maturity=(lp&&expr.num)?reduceMaster(lp+expr.num):null;
+  // ── Chaldean ──
+  const compound=N.nameTotal>9?reduce1(N.nameTotal)!==N.nameTotal?N.nameTotal:N.nameTotal:null;
+  const compKey=N.nameTotal>=10?(N.nameTotal>52?((N.nameTotal-1)%42)+10:N.nameTotal):null;
+  // ── Lo Shu planes ──
+  const g=N.loShu||{};
+  const planes=LOSHU_PLANES.map(pl=>{
+    const full=pl.d.every(d=>g[d]);
+    return`<tr><td style="color:var(--tx1)">${pl.n}</td>
+      <td style="text-align:center"><span class="pill ${full?'pb-b':'pb-n'}">${full?'COMPLETE':'partial/missing'}</span></td>
+      <td style="font-size:11px;color:var(--tx2)">${full?pl.has:pl.miss}</td></tr>`;}).join('');
+  const missing=[1,2,3,4,5,6,7,8,9].filter(d=>!g[d]);
+  const loShu=[[4,9,2],[3,5,7],[8,1,6]].map(row=>`<tr>${row.map(n=>`<td style="width:46px;height:42px;text-align:center;border:1px solid var(--bd2);font-family:monospace;font-size:15px;color:${g[n]?'var(--bull)':'var(--tx3)'}">${g[n]?String(n).repeat(g[n]):'·'}</td>`).join('')}</tr>`).join('');
+  const mrow=(lbl,v)=>v?`<div style="font-size:11.5px;color:var(--tx2);margin-top:3px"><b style="color:var(--acc)">${lbl} ${v}</b> — ${NUM_MEANING[v]||''}</div>`:'';
   return`
-  <div class="pnl"><div class="ph"><span class="dot"></span>VEDIC NUMEROLOGY — PLAYER / TEAM / CAPTAIN</div>
+  <div class="pnl"><div class="ph"><span class="dot"></span>WORLD NUMEROLOGY — VEDIC · CHALDEAN · PYTHAGOREAN · LO SHU · KUA</div>
   <div class="pb"><div class="ctrl-row" style="flex-wrap:wrap;gap:8px">
     ${inp('NAME','numName','player / team name')}
     ${inp('DATE OF BIRTH','numDob','','date')}
-    ${sel('GENDER','numGender',['M','F'])}
-  </div></div></div>`+
-  pnl(`CORE NUMBERS — ${N.name}`,`<div style="display:flex;gap:22px;flex-wrap:wrap">
-    ${cell('BIRTH / PSYCHIC',N.birth,N.birth?NUM_PLANET[N.birth]:'')}
-    ${cell('DESTINY',N.destiny,N.destiny?NUM_PLANET[N.destiny]:'')}
-    ${cell('NAME NUMBER',N.nameNum,`${NUM_PLANET[N.nameNum]} · total ${N.nameTotal}`)}
-    ${cell('KUA',N.kua)}
+    ${sel('GENDER (for Kua)','numGender',['M','F'])}
+  </div></div></div>
+
+  ${pnl(`VEDIC (ANK JYOTISH) — ${N.name}`,`<div style="display:flex;gap:22px;flex-wrap:wrap">
+    ${cell('MOOLANK (Psychic)',N.birth,N.birth?NUM_PLANET[N.birth]+' — day of birth':'')}
+    ${cell('BHAGYANK (Destiny)',N.destiny,N.destiny?NUM_PLANET[N.destiny]+' — full DOB':'')}
+    ${cell('KUA',N.kua,'Feng-shui/Vastu direction number')}
     ${cell('PERSONAL YEAR',N.personalYear)}
     ${cell('PERSONAL MONTH',N.personalMonth)}
     ${cell('PERSONAL DAY',N.personalDay)}
     ${cell('UNIVERSAL DAY',N.universalDay)}
-  </div>`)+
-  `<div class="g2">`+
-  pnl('LO SHU GRID (from DOB)',`<table style="border-collapse:collapse">${loShu}</table><div style="font-size:10.5px;color:var(--tx3);margin-top:6px">Missing numbers show as · — repeated digits strengthen that plane.</div>`)+
-  pnl('LUCKY PROFILE',`
+  </div>${mrow('Moolank',N.birth)}${mrow('Bhagyank',N.destiny)}`)}
+
+  <div class="g2">
+  ${pnl('CHALDEAN (CHEIRO) — name vibration',`<div style="display:flex;gap:22px;flex-wrap:wrap">
+    ${cell('NAME NUMBER',N.nameNum,NUM_PLANET[N.nameNum],`${pc(NUM_PLANET[N.nameNum])}`)}
+    ${cell('COMPOUND',N.nameTotal>9?N.nameTotal:'—',compKey&&CHALDEAN_COMPOUND[compKey]?CHALDEAN_COMPOUND[compKey]:(N.nameTotal<=9?'single digit — direct vibration':''))}
+  </div>
+  <div style="font-size:11.5px;color:var(--tx2);margin-top:6px">Chaldean values are sound-based (no 9 assigned). Single number = outer vibration; compound = hidden karmic influence.</div>
+  ${mrow('Name',N.nameNum)}`)}
+
+  ${pnl('PYTHAGOREAN (WESTERN) — with master numbers 11 · 22 · 33',`<div style="display:flex;gap:22px;flex-wrap:wrap">
+    ${cell('LIFE PATH',lp,'core life lesson',lp===11||lp===22||lp===33?'var(--neut)':null)}
+    ${cell('EXPRESSION / DESTINY',expr.num,'full name · total '+expr.total)}
+    ${cell('SOUL URGE',soul.num,'vowels — inner drive')}
+    ${cell('PERSONALITY',pers.num,'consonants — outer face')}
+    ${cell('BIRTHDAY',bday,'day talent')}
+    ${cell('MATURITY',maturity,'Life Path + Expression')}
+  </div>${mrow('Life Path',lp)}${mrow('Expression',expr.num)}`)}
+  </div>
+
+  <div class="g2">
+  ${pnl('LO SHU GRID (CHINESE) — from DOB',`<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
+    <table style="border-collapse:collapse">${loShu}</table>
+    <div style="font-size:11.5px;color:var(--tx1)">Missing numbers: <b style="color:var(--bear)">${missing.join(', ')||'none'}</b>
+      <div style="font-size:10.5px;color:var(--tx3);margin-top:4px">Repeated digits strengthen that quality; missing ones are growth areas.</div></div>
+  </div>
+  <div class="ts" style="margin-top:8px"><table class="tbl"><thead><tr><th>Plane / Arrow</th><th>Status</th><th>Reading</th></tr></thead><tbody>${planes}</tbody></table></div>`)}
+
+  ${pnl('LUCKY PROFILE (from Moolank)',`
     <div style="font-size:12.5px;color:var(--tx1);line-height:2">
     Lucky numbers: <b style="color:var(--bull)">${(N.lucky||[]).join(', ')}</b><br>
     Unlucky numbers: <b style="color:var(--bear)">${(N.unlucky||[]).join(', ')}</b><br>
     Lucky colours: <b style="color:var(--acc)">${N.colours}</b><br>
     Ruling planet: <b style="color:${pc(NUM_PLANET[N.birth||N.nameNum])}">${NUM_PLANET[N.birth||N.nameNum]}</b><br>
-    Compatible numbers: <b>${(N.lucky||[]).slice(0,2).join(', ')}</b></div>`)+
-  `</div>`;
+    Compatible numbers: <b>${(N.lucky||[]).slice(0,2).join(', ')}</b><br>
+    Jersey suggestion: <b style="color:var(--bull)">${(N.lucky||[])[0]??'—'}</b> or any number reducing to it</div>`)}
+  </div>`;
 };
 
 // ── TAB: WORLD CLOCK ───────────────────────────────────────────────
