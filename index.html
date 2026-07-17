@@ -8109,12 +8109,6 @@ function tSBC(){
   const snapPrev=sbcSnapshot(JD(dp[0],dp[1],dp[2],_locP.close||15.5)-1,S.ayMode);  // −1 JD day = yesterday's close
   const prevNet={}; SBC_INSTR.forEach(ins=>{ prevNet[ins.key]=sbcVerdict(snapPrev,ins).net; });
   window.SBCX={snap,verdicts,prevNet};
-  // ── Shringonnati: Monthly bias from Shukla Dvitiya Moon horn elevation ──
-  const _shrLoc=(typeof LOCATIONS!=='undefined'&&LOCATIONS[S.loc])||{lat:19.076,lon:72.878,tz:5.5};
-  const _shr=sbcShringonnati(Jnow, S.ayMode, _shrLoc);
-  // Overall vedha bias this moment (sum net across all instruments)
-  const _shrOverallNet=verdicts.reduce((s,v)=>s+v.net,0);
-  const _shrVedicBias=_shrOverallNet>0.15?'TEJI':_shrOverallNet<-0.15?'MANDI':'NEUTRAL';
   const activeNaks=new Set(snap.planets.map(p=>p.nak.idx));
   // naks pierced by anything (for ring colouring) → {saumya:n,krura:n}
   const nakPierce={};
@@ -8418,8 +8412,6 @@ function tSBC(){
 <div style="display:flex;flex-direction:column;gap:10px">
 
   <div style="font-size:10.5px;color:var(--tx3);padding:4px 0">सर्वतोभद्र चक्र — vedha (piercing) analysis for the teams entered in Match Forecast. Saumya piercing = supportive; Krura = adverse.</div>
-
-  ${sbcShringonnatiPanel(_shr, _shrVedicBias)}
 
   <!-- INTRADAY VISHVA TIMELINE -->
   ${(()=>{
