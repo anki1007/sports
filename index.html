@@ -4429,7 +4429,7 @@ function rHdr(){
 // NAV
 // ═══════════════════════════════════════════════════════════════════
 function rNav(){
-  const tabs=[['match','🏆 Match Forecast'],['muhurat','🕉 Match Muhurat'],['numero','🔢 Numerology'],['worldclock','🌍 World Clock'],['panchak','◔ Panchak'],['transit','⊞ Transit Cal'],['kundali','◇ Team Horoscope'],['bhav','⌂ Bhav Phal'],['ashtaka','⊡ Ashtakavarga'],['kp','⊕ KP Planets'],['charts','◈ D1·D9'],['shar','⟐ Shar'],['kranti','◓ Kranti'],['planlat','🪐 Planet Lat'],['planlon','🛰 Planet Lon']];
+  const tabs=[['match','🏆 Match Forecast'],['muhurat','🕉 Match Muhurat'],['numero','🔢 Numerology'],['worldclock','🌍 World Clock'],['panchak','◔ Panchak'],['transit','⊞ Transit Cal'],['kundali','◇ Team Horoscope'],['bhav','⌂ Bhav Phal'],['ashtaka','⊡ Ashtakavarga'],['kp','⊕ KP Planets'],['charts','◈ D1·D9'],['sbc','⬡ SBC Chakra'],['shar','⟐ Shar'],['kranti','◓ Kranti'],['planlat','🪐 Planet Lat'],['planlon','🛰 Planet Lon']];
   const closeRow=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 8px 14px;border-bottom:1px solid var(--bd);background:var(--bg1);flex-shrink:0">
     <span style="font-size:11.5px;color:var(--tx3);letter-spacing:.08em">MENU</span>
     <button onclick="closeNav()" style="background:none;border:none;color:var(--tx2);font-size:20px;line-height:1;cursor:pointer;padding:2px 6px">✕</button>
@@ -4439,7 +4439,7 @@ function rNav(){
 
 function rMain(){
   const sp=k=>()=>window[k]?window[k]():'<div style="padding:20px;color:var(--tx3)">Loading module…</div>';
-  const fns={match:sp('tMatch'),muhurat:sp('tMuhurat'),numero:sp('tNumero'),worldclock:sp('tWorldClock'),shar:()=>tSharParivartan('shar'),kranti:()=>tSharParivartan('kranti'),transit:tTransit,kundali:tKundali,bhav:tBhavphal,ashtaka:tAshtaka,kp:tKP,charts:tCharts,planlat:sp('tAstroLat'),planlon:sp('tAstroLon'),panchak:tPanchak};
+  const fns={match:sp('tMatch'),muhurat:sp('tMuhurat'),numero:sp('tNumero'),worldclock:sp('tWorldClock'),shar:()=>tSharParivartan('shar'),kranti:()=>tSharParivartan('kranti'),transit:tTransit,kundali:tKundali,bhav:tBhavphal,ashtaka:tAshtaka,kp:tKP,charts:tCharts,planlat:sp('tAstroLat'),planlon:sp('tAstroLon'),sbc:sp('tSBCsports'),panchak:tPanchak};
   document.getElementById('MAIN').innerHTML=(fns[S.tab]||sp('tMatch'))();
   if(window.sportsAfterRender) window.sportsAfterRender();
   collapsibleInit();
@@ -8099,7 +8099,6 @@ async function sbcFetchMonthlyPrice(){
 }
 
 function tSBC(){
-  if(S.sbcMode==='bt') return tSBCBT();
   const D=DATA;
   const dp=S.date.split('-').map(Number);
   const Jnow=JD(dp[0],dp[1],dp[2],parseFloat(S.time)||9.25);
@@ -8418,12 +8417,7 @@ function tSBC(){
   return `
 <div style="display:flex;flex-direction:column;gap:10px">
 
-  <!-- Mode toggle: Live / Backtest -->
-  <div style="display:flex;gap:6px;align-items:center;padding:4px 0">
-    <button onclick="gs({sbcMode:'live'})" style="padding:5px 14px;border-radius:3px;border:1px solid ${!S.sbcMode||S.sbcMode==='live'?'#1a8aff':'var(--bd)'};background:${!S.sbcMode||S.sbcMode==='live'?'var(--bg3)':'var(--bg2)'};color:${!S.sbcMode||S.sbcMode==='live'?'var(--tx1)':'var(--tx3)'};cursor:pointer;font-size:11.5px;font-weight:700">⬡ Live</button>
-    <button onclick="gs({sbcMode:'bt'})" style="padding:5px 14px;border-radius:3px;border:1px solid ${S.sbcMode==='bt'?'#1a8aff':'var(--bd)'};background:${S.sbcMode==='bt'?'var(--bg3)':'var(--bg2)'};color:${S.sbcMode==='bt'?'var(--tx1)':'var(--tx3)'};cursor:pointer;font-size:11.5px;font-weight:700">🔬 Backtest</button>
-    <span style="font-size:10.5px;color:var(--tx3);margin-left:4px">SBC signal accuracy engine · Yahoo Finance OHLCV</span>
-  </div>
+  <div style="font-size:10.5px;color:var(--tx3);padding:4px 0">सर्वतोभद्र चक्र — vedha (piercing) analysis for the teams entered in Match Forecast. Saumya piercing = supportive; Krura = adverse.</div>
 
   ${sbcShringonnatiPanel(_shr, _shrVedicBias)}
 
@@ -8432,7 +8426,7 @@ function tSBC(){
     const _locP=(typeof LOCATIONS!=='undefined'&&LOCATIONS[S.loc])||{open:9.25,close:15.5,tz:5.5};
     const tz=_locP.tz||5.5;
     const dp=S.date.split('-').map(Number);
-    const _hrs=[]; for(let h=9.25;h<=15.51;h+=0.25) _hrs.push(Math.round(h*4)/4);
+    const _hrs=[]; for(let h=0;h<=24.01;h+=0.5) _hrs.push(Math.round(h*4)/4);
     const _niftyInstr=SBC_INSTR.find(p=>p.key==='nifty')||SBC_INSTR[0];
     const points=_hrs.map(hr=>{
       const J=JD(dp[0],dp[1],dp[2],hr-tz+5.5);
@@ -8467,7 +8461,7 @@ function tSBC(){
     let dots='';points.forEach((pt,i)=>{const x=xOf(pt.hr).toFixed(1),y=yOf(pt.net).toFixed(1);const isChange=i>0&&pt.nak!==points[i-1].nak;const isKey=i===0||i===points.length-1||isChange||Math.abs(pt.net)===vMax;const col=pt.net>0?'var(--merc)':'var(--bear)';const r=isChange?4.5:isKey?2.5:1.5;dots+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${isChange?'var(--neut)':col}" stroke="${isKey?'var(--bg2)':'none'}" stroke-width="${isKey?0.8:0}"><title>${timeLabel(pt.hr)}: ${pt.net>0?'+':''}${pt.net}V · ${pt.nakName} p${pt.pada}${isChange?' ← Nak shift':''}</title></circle>`;if(isKey){const anchor=i===0?'start':i===points.length-1?'end':'middle';dots+=`<text x="${x}" y="${(parseFloat(y)-6).toFixed(1)}" fill="${isChange?'var(--neut)':col}" font-size="8" text-anchor="${anchor}" font-weight="700">${pt.net>0?'+':''}${pt.net}</text>`;}});
     const svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block;overflow:visible"><defs><linearGradient id="ig_pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--merc)" stop-opacity=".35"/><stop offset="100%" stop-color="var(--merc)" stop-opacity=".05"/></linearGradient><linearGradient id="ig_neg" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="var(--bear)" stop-opacity=".35"/><stop offset="100%" stop-color="var(--bear)" stop-opacity=".05"/></linearGradient></defs>${grid}${xLabels}<path d="${areaPos.join('')}" fill="url(#ig_pos)"/><path d="${areaNeg.join('')}" fill="url(#ig_neg)"/>${nakLines}<polyline points="${linePts}" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-linejoin="round"/>${dots}</svg>`;
     const nakStrip=points.filter((pt,i)=>{if(i===0)return true;return pt.nak!==points[i-1].nak||pt.pada!==points[i-1].pada;}).map((pt,i,arr)=>{const isNakChange=i>0&&pt.nak!==arr[i-1].nak;return `<span style="font-size:8px;color:${isNakChange?'var(--neut)':'var(--tx3)'};margin-right:14px">${timeLabel(pt.hr)} <span style="color:${isNakChange?'var(--neut)':'var(--tx3)'}">${pt.nakName} p${pt.pada}</span></span>`;}).join('');
-    return `<div class="pnl"><div class="ph"><span class="dot"></span>विश्वा INTRADAY ARC — NIFTY 50 · ${S.date} · ${S.loc||'Mumbai'}${nakChanges.length>0?' · 🌙 Nak shift':''}</div><div class="pb"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:8px">${nakNote} &nbsp;·&nbsp; NIFTY 50 Vishva · rising = Teji pressure · falling = Mandi pressure · Moon nak shift = key inflection</div><div style="overflow-x:auto;padding-bottom:4px">${svg}</div><div style="margin-top:8px;line-height:1.8">${nakStrip}</div></div></div>`;
+    return `<div class="pnl"><div class="ph"><span class="dot"></span>विश्वा MATCH-DAY ARC — ${_niftyInstr.name} · ${S.date} · ${S.venueName||S.loc||'Mumbai'}${nakChanges.length>0?' · 🌙 Nak shift':''}</div><div class="pb"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:8px">${nakNote} &nbsp;·&nbsp; ${_niftyInstr.name} Vishva · rising = positive pressure · falling = negative pressure · Moon nak shift = key inflection</div><div style="overflow-x:auto;padding-bottom:4px">${svg}</div><div style="margin-top:8px;line-height:1.8">${nakStrip}</div></div></div>`;
   })()}
 
   <!-- MONTHLY VISHVA ARC -->
@@ -8509,7 +8503,7 @@ function tSBC(){
     let todayMark='';const todayIdx=points.findIndex(p=>p.isToday);if(todayIdx>=0){const x=xOf(todayIdx).toFixed(1);todayMark=`<line x1="${x}" y1="${PT}" x2="${x}" y2="${H-PB}" stroke="var(--neut2)" stroke-width="1" stroke-dasharray="2 2" opacity=".8"/>`;}
     let dots='';points.forEach((pt,i)=>{const x=xOf(i).toFixed(1);const yo=yOf(pt.open).toFixed(1),yc=yOf(pt.close).toFixed(1);const col=pt.open>0?'var(--merc)':'var(--bear)';const colC=pt.close>0?'var(--acc)':'#ff8888';dots+=`<circle cx="${x}" cy="${yc}" r="1.5" fill="${colC}" opacity=".6"><title>${pt.dateStr} 15:30V: ${pt.close>0?'+':''}${pt.close}</title></circle>`;dots+=`<circle cx="${x}" cy="${yo}" r="${pt.isToday?4:pt.intraNakChange?3.5:2}" fill="${pt.isToday?'var(--neut2)':pt.intraNakChange?'var(--neut)':col}" stroke="${(pt.isToday||pt.intraNakChange)?'var(--bg2)':'none'}" stroke-width="0.8"><title>${pt.dateStr} 9:15V: ${pt.open>0?'+':''}${pt.open} · Moon: ${pt.nakNameO}p${pt.padaO}${pt.intraNakChange?' → '+pt.nakNameC+'p'+pt.padaC+' (intraday shift)':''}</title></circle>`;});
     const svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block;overflow:visible"><defs><linearGradient id="mg_pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--merc)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--merc)" stop-opacity=".04"/></linearGradient><linearGradient id="mg_neg" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="var(--bear)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--bear)" stop-opacity=".04"/></linearGradient></defs>${grid}${xLabels}<path d="${areaPos.join('')}" fill="url(#mg_pos)"/><path d="${areaNeg.join('')}" fill="url(#mg_neg)"/>${todayMark}${nakLines}<polyline points="${closePts}" fill="none" stroke="#3a7090" stroke-width="1" stroke-dasharray="3 2" opacity=".7"/><polyline points="${openPts}" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-linejoin="round"/>${dots}</svg>`;
-    return `<div class="pnl"><div class="ph"><span class="dot"></span>विश्वा MONTHLY ARC — NIFTY 50 · ${points.length} trading days</div><div class="pb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><button onclick="gs({sbcMonthOff:(S.sbcMonthOff||0)-1})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--acc);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1">◀</button><span style="font-size:11px;font-weight:700;color:var(--acc);min-width:80px;text-align:center">${MON[mo]} ${yr}</span><button onclick="gs({sbcMonthOff:(S.sbcMonthOff||0)+1})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--acc);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1">▶</button><button onclick="gs({sbcMonthOff:0})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--tx3);padding:3px 8px;border-radius:3px;cursor:pointer;font-size:10.5px">↺ Now</button><span style="font-size:10.5px;color:var(--tx3);margin-left:4px"><span style="color:var(--acc)">——</span> 9:15V &nbsp;<span style="color:#3a7090">- -</span> 15:30V &nbsp;<span style="color:var(--neut)">◆</span> nak shift &nbsp;<span style="color:var(--neut2)">|</span> today</span></div><div style="overflow-x:auto;padding-bottom:4px">${svg}</div><div id="sbc-mprice-${yr}-${mo}" style="margin-top:2px;overflow-x:auto;padding-bottom:4px"><div style="font-size:10.5px;color:var(--bd2);padding:6px 0">Loading NIFTY price…</div></div></div></div>`;
+    return `<div class="pnl"><div class="ph"><span class="dot"></span>विश्वा MONTHLY ARC — ${(SBC_INSTR[0]||{}).name||''} · ${points.length} days</div><div class="pb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><button onclick="gs({sbcMonthOff:(S.sbcMonthOff||0)-1})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--acc);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1">◀</button><span style="font-size:11px;font-weight:700;color:var(--acc);min-width:80px;text-align:center">${MON[mo]} ${yr}</span><button onclick="gs({sbcMonthOff:(S.sbcMonthOff||0)+1})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--acc);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1">▶</button><button onclick="gs({sbcMonthOff:0})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--tx3);padding:3px 8px;border-radius:3px;cursor:pointer;font-size:10.5px">↺ Now</button><span style="font-size:10.5px;color:var(--tx3);margin-left:4px"><span style="color:var(--acc)">——</span> 9:15V &nbsp;<span style="color:#3a7090">- -</span> 15:30V &nbsp;<span style="color:var(--neut)">◆</span> nak shift &nbsp;<span style="color:var(--neut2)">|</span> today</span></div><div style="overflow-x:auto;padding-bottom:4px">${svg}</div></div></div>`;
   })()}
 
   <!-- 15-LIMB VARNADI PANCHAK PANEL -->
@@ -8597,7 +8591,7 @@ function tSBC(){
   <div class="pnl">
     <div class="ph"><span class="dot"></span>व्यापार रत्न · सर्वतोभद्र वेध-पद्धति VERDICTS · ${S.date} ${mtt(parseFloat(S.time)*60)} · ${snap.tith.paksha} पक्ष ${snap.tith.name}${snap.moonKrura?' · <span style="color:var(--bear)">क्षीण चन्द्र (क्रूर)</span>':''}</div>
     <div class="pb"><div style="display:flex;gap:8px;flex-wrap:wrap">${cards}</div>
-    <div style="font-size:10.5px;color:var(--tx3);margin-top:6px">Book rule (§5h, p.47): शेष विश्वे सौम्य ⇒ <b style="color:var(--bear)">मंदी (bearish)</b> · शेष विश्वे क्रूर ⇒ <b style="color:var(--bull)">तेजी (bullish)</b>. फल-विश्वा (§5i, pp.421-23): two-period differencing — period-1 = previous day's close, period-2 = now; Δprice = anchor × |फल-विश्वा| ÷ 20, क्रूर(तेजी)→add · सौम्य(मंदी)→subtract. <b>bias</b> = standing शेष-विश्वा /20.</div></div>
+    <div style="font-size:10.5px;color:var(--tx3);margin-top:6px">Book rule (§5h, p.47): शेष विश्वे सौम्य ⇒ <b style="color:var(--bear)">मंदी (adverse energy)</b> · शेष विश्वे क्रूर ⇒ <b style="color:var(--bull)">तेजी (supportive energy)</b>. <b>bias</b> = standing शेष-विश्वा /20 — read it as the team's momentum from the chakra piercings at this moment.</div></div>
   </div>
 
   <!-- 15-min heatmap -->
@@ -12794,6 +12788,28 @@ function alTab(mode){
 }
 window.tAstroLat=()=>alTab('lat');
 window.tAstroLon=()=>alTab('lon');
+
+// ── TAB: SARVATOBHADRA CHAKRA (sports) ─────────────────────────────
+// Reuses the full classical SBC engine; the pierced entities are the
+// teams from Match Forecast (varnadi-panchak from the name's first sound).
+const LAT2DEV={a:'अ',b:'ब',c:'च',d:'द',e:'ए',f:'फ',g:'ग',h:'ह',i:'इ',j:'ज',k:'क',l:'ल',m:'म',n:'न',o:'ओ',p:'प',q:'क',r:'र',s:'स',t:'त',u:'उ',v:'व',w:'व',x:'ज',y:'य',z:'ज'};
+function teamInstr(key,name){
+  const raw=(name||'').trim();
+  // already Devanagari? use as-is; else map the first Latin letter
+  let aksh=raw&&/[ऀ-ॿ]/.test(raw)?raw:LAT2DEV[(raw[0]||'t').toLowerCase()]||'त';
+  let vp=varnadiPanchak(aksh);
+  if(vp.incomplete||vp.nakRing==null) vp=varnadiPanchak('क');
+  return {key, name:raw||key.toUpperCase(), dev:aksh, letter:vp.letter,
+          varnaCell:vp.varnaCell, svara:vp.svara, svaraCell:vp.svaraCell,
+          tithiGrp:vp.tithiGrp, nakRing:vp.nakRing, nakPada:vp.nakPada, rashi:vp.rashi};
+}
+window.tSBCsports=function(){
+  const A=teamInstr('teamA',S.teamA||'Team A');
+  const B=teamInstr('teamB',S.teamB||'Team B');
+  SBC_INSTR.length=0; SBC_INSTR.push(A,B);
+  if(S.venueName) SBC_INSTR.push(teamInstr('venue',S.venueName));
+  return tSBC();
+};
 
 // after every render: async fills
 window.sportsAfterRender=function(){ if(S.tab==='match') setTimeout(loadWeather,60); };
