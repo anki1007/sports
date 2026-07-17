@@ -3169,15 +3169,21 @@ let _natalCache = {};
 function getNatalCfg(){
   const d=(typeof S!=='undefined')&&dobParts_&&dobParts_(S.natalDate);
   if(d){
-    const t=parseFloat(S.natalTime); const istH=isNaN(t)?12:t;
-    return {y:d.y,mo:d.mo,d:d.dy,istH,lat:LAT,lon:LON,
-            label:(S.natalName||'TEAM')+' · '+S.natalDate+(S.natalTime?' · '+mtt(istH*60):'')};
+    let istH=12;
+    const ts=String(S.natalTime||'');
+    const hm=/^(\d{1,2}):(\d{2})$/.exec(ts);
+    if(hm) istH=(+hm[1])+(+hm[2])/60;
+    else if(!isNaN(parseFloat(ts))) istH=parseFloat(ts);
+    const la=parseFloat(S.natalLat), lo=parseFloat(S.natalLon);
+    return {y:d.y,mo:d.mo,d:d.dy,istH,
+            lat:isNaN(la)?LAT:la, lon:isNaN(lo)?LON:lo,
+            label:(S.natalName||'TEAM')+' · '+S.natalDate+' · '+mtt(istH*60)+(S.natalPlace?' · '+S.natalPlace:'')};
   }
   return NIFTY_NATAL;
 }
 function dobParts_(s){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');return m?{y:+m[1],mo:+m[2],dy:+m[3]}:null;}
 function computeNatal(ayMode){
-  const cfgKey=ayMode+'|'+((typeof S!=='undefined'&&(S.natalDate||''))+'|'+(S.natalTime||'')+'|'+(S.natalName||''));
+  const cfgKey=ayMode+'|'+((typeof S!=='undefined'&&(S.natalDate||''))+'|'+(S.natalTime||'')+'|'+(S.natalName||'')+'|'+(S.natalPlace||'')+'|'+(S.natalLat||'')+'|'+(S.natalLon||''));
   if(_natalCache[cfgKey]) return _natalCache[cfgKey];
   const N=getNatalCfg();
   const sLAT=LAT, sLON=LON;
@@ -4052,7 +4058,7 @@ function buildIndexForecast(D){
 // → return the previous result instantly instead of recomputing.
 let _computeAllMemo={key:null,val:null};
 function computeAll(dateStr,timeIST,ayMode){
-  const _memoKey=[dateStr,timeIST,ayMode,(typeof S!=='undefined'&&S.session)||'mkt',(typeof S!=='undefined'&&S.loc)||'Mumbai',LAT,LON,isAELoaded()?'ae':'kep',(typeof S!=='undefined'&&(S.natalDate||''))+'~'+(typeof S!=='undefined'&&(S.natalTime||''))+'~'+(typeof S!=='undefined'&&(S.natalName||''))].join('|');
+  const _memoKey=[dateStr,timeIST,ayMode,(typeof S!=='undefined'&&S.session)||'mkt',(typeof S!=='undefined'&&S.loc)||'Mumbai',LAT,LON,isAELoaded()?'ae':'kep',(typeof S!=='undefined'&&(S.natalDate||''))+'~'+(typeof S!=='undefined'&&(S.natalTime||''))+'~'+(typeof S!=='undefined'&&(S.natalName||''))+'~'+(typeof S!=='undefined'&&(S.natalPlace||''))+'~'+(typeof S!=='undefined'&&(S.natalLat||''))+'~'+(typeof S!=='undefined'&&(S.natalLon||''))].join('|');
   if(_computeAllMemo.key===_memoKey) return _computeAllMemo.val;
   const dp=dateStr.split('-').map(Number);
   const J=JD(dp[0],dp[1],dp[2],timeIST);
@@ -10582,8 +10588,13 @@ function tKundali(){
         <div class="ctrl-row" style="flex-wrap:wrap;gap:8px;margin-bottom:8px">
           <div class="cg"><span class="cl">TEAM / CLUB / CAPTAIN</span><input type="text" class="ci w130" value="${S.natalName||''}" placeholder="e.g. Mumbai Indians" onchange="gs({natalName:this.value})"></div>
           <div class="cg"><span class="cl">FOUNDATION / DOB</span><input type="date" class="ci w130" value="${S.natalDate||''}" onchange="gs({natalDate:this.value})"></div>
-          <div class="cg"><span class="cl">TIME (decimal h)</span><input type="text" class="ci w80" value="${S.natalTime||''}" placeholder="12.5 = 12:30" onchange="gs({natalTime:this.value})"></div>
+          <div class="cg"><span class="cl">INCEPTION TIME</span><input type="time" class="ci w80" value="${/^\d{1,2}:\d{2}$/.test(S.natalTime||'')?S.natalTime:''}" onchange="gs({natalTime:this.value})"></div>
+          <div class="cg" style="position:relative"><span class="cl">PLACE (city / stadium)</span>
+            <input type="text" id="iNP" class="ci w130" autocomplete="off" placeholder="Type 3+ letters…" value="${S.natalPlace||''}">
+            <div id="iNPdd" style="display:none;position:absolute;top:100%;left:0;z-index:99;min-width:260px;max-height:260px;overflow:auto;background:var(--bg1);border:1px solid var(--bd2);box-shadow:0 6px 18px #0008"></div>
+          </div>
         </div>
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:6px">Chart place: <b style="color:var(--acc)">${S.natalPlace||('current venue — '+(S.venueName||S.loc||'Mumbai'))}</b>${S.natalLat?` (${parseFloat(S.natalLat).toFixed(3)}°, ${parseFloat(S.natalLon).toFixed(3)}°)`:''}</div>
         <div style="display:flex;justify-content:center">${northChart(nat.planets, nat.ascSignIdx, 'TEAM NATAL D1', 'North-Indian whole-sign')}</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0;font-size:11px">
           <span><span class="ml">LAGNA</span> <b class="ca">${nat.ascSign.sign} ${dmsC(nat.ascSign.deg)}</b></span>
@@ -12288,6 +12299,28 @@ document.addEventListener('input',e=>{
 document.addEventListener('click',e=>{
   const dd=document.getElementById('iVSdd');
   if(dd&&!e.target.closest('#iVSdd')&&e.target.id!=='iVS') dd.style.display='none';
+  const nd=document.getElementById('iNPdd');
+  if(nd&&!e.target.closest('#iNPdd')&&e.target.id!=='iNP') nd.style.display='none';
+});
+
+// ── NATAL PLACE SEARCH (Team Horoscope tab) — same worldwide DB ────
+window.npPick=function(idx){
+  const x=SLOC[idx]; if(!x) return;
+  gs({natalPlace:x.n+' ('+x.c+')', natalLat:String(x.la), natalLon:String(x.lo)});
+};
+document.addEventListener('input',e=>{
+  if(e.target&&e.target.id==='iNP'){
+    const dd=document.getElementById('iNPdd'); if(!dd) return;
+    const hits=vsSearch(e.target.value);
+    if(!hits.length){dd.style.display='none';return;}
+    dd.innerHTML=hits.map(h=>{
+      const i=SLOC.indexOf(h);
+      return`<div onclick="npPick(${i})" style="padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:12px" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+        <b style="color:var(--tx0)">${h.n}</b> <span style="color:var(--tx3)">· ${h.c}</span>
+        ${h.t==='stadium'?`<span style="color:var(--acc);font-size:10px"> ⬡ ${h.s} stadium</span>`:''}
+      </div>`;}).join('');
+    dd.style.display='block';
+  }
 });
 
 // ── NUMEROLOGY CORE (Vedic / Chaldean) ─────────────────────────────
