@@ -559,10 +559,8 @@ const LOCATIONS={
 // Every intraday engine (15-min slots, 5-min lagna grid, header time
 // picker, planetary-hour schedule, overview bias chart) reads this.
 function sessionRange(){
-  const L=LOCATIONS[(typeof S!=='undefined'&&S.loc)||'Mumbai']||LOCATIONS['Mumbai'];
-  if(typeof S!=='undefined' && S.session==='24h')
-    return {startMin:0, endMin:23*60+55, is24:true, label:'24H ROUND-THE-CLOCK'};
-  return {startMin:Math.round(L.open*60), endMin:Math.round(L.close*60), is24:false, label:L.mkt+' MARKET HOURS'};
+  // Sports terminal: always the full 24-hour day, 00:00 → 23:55.
+  return {startMin:0, endMin:23*60+55, is24:true, label:'24H FULL DAY'};
 }
 function dateShiftStr(dateStr, days){
   const d=new Date(dateStr+"T12:00:00"); d.setDate(d.getDate()+days);
@@ -4271,12 +4269,10 @@ function nowTimeIST(){
   try{
     const ist=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
     const h=ist.getHours(),m=ist.getMinutes();
-    const dec=h+m/60;
-    if(dec<9.25)return'9.25';
-    if(dec>15.5)return'15.5';
-    const slots=[9.25,9.5,9.75,10,10.25,10.5,10.75,11,11.25,11.5,11.75,12,12.25,12.5,12.75,13,13.25,13.5,13.75,14,14.25,14.5,14.75,15,15.25,15.5];
-    return String(slots.reduce((p,c)=>Math.abs(c-dec)<Math.abs(p-dec)?c:p));
-  }catch(e){return'9.25';}
+    // snap current time to the nearest 5-minute slot across the full day
+    const dec=h+(Math.round(m/5)*5)/60;
+    return String(Math.min(23+55/60, Math.max(0, Math.round(dec*1e6)/1e6)));
+  }catch(e){return'12';}
 }
 
 // gannAnchor: 'open' (default) | 'prevclose'
@@ -8105,8 +8101,7 @@ function tSBC(){
   const snap=sbcSnapshot(Jnow,S.ayMode);
   const verdicts=SBC_INSTR.map(ins=>sbcVerdict(snap,ins));
   // §5i price engine — two-period differencing (book pp.421-423): period-1 = previous day's close, period-2 = now
-  const _locP=(typeof LOCATIONS!=='undefined'&&LOCATIONS[S.loc])||{open:9.25,close:15.5};
-  const snapPrev=sbcSnapshot(JD(dp[0],dp[1],dp[2],_locP.close||15.5)-1,S.ayMode);  // −1 JD day = yesterday's close
+  const snapPrev=sbcSnapshot(Jnow-1,S.ayMode);  // 24h earlier — previous day's same moment
   const prevNet={}; SBC_INSTR.forEach(ins=>{ prevNet[ins.key]=sbcVerdict(snapPrev,ins).net; });
   window.SBCX={snap,verdicts,prevNet};
   const activeNaks=new Set(snap.planets.map(p=>p.nak.idx));
@@ -8445,7 +8440,7 @@ function tSBC(){
     const vTicks=[...new Set([-vMax,-(vMax/2),0,vMax/2,vMax].map(v=>Math.round(v*2)/2))];
     vTicks.forEach(v=>{const y=yOf(v);const isZ=Math.abs(v)<0.01;grid+=`<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="${isZ?'var(--bd2)':'var(--bd)'}" stroke-width="${isZ?1:0.5}" stroke-dasharray="${isZ?'':'3 3'}"/>`;grid+=`<text x="${PL-4}" y="${(y+3).toFixed(1)}" fill="var(--tx3)" font-size="8" text-anchor="end">${v>0?'+':''}${v.toFixed(1)}</text>`;});
     let xLabels='';
-    points.forEach(pt=>{const m=Math.round((pt.hr-Math.floor(pt.hr))*60);if(m===0||pt.hr===9.25||pt.hr===15.5){const x=xOf(pt.hr);xLabels+=`<text x="${x.toFixed(1)}" y="${(H-PB+12).toFixed(1)}" fill="var(--tx3)" font-size="8" text-anchor="middle">${timeLabel(pt.hr)}</text>`;}});
+    points.forEach(pt=>{const m=Math.round((pt.hr-Math.floor(pt.hr))*60);if(m===0){const x=xOf(pt.hr);xLabels+=`<text x="${x.toFixed(1)}" y="${(H-PB+12).toFixed(1)}" fill="var(--tx3)" font-size="8" text-anchor="middle">${timeLabel(pt.hr)}</text>`;}});
     const areaPos=[],areaNeg=[];
     for(let i=0;i<points.length-1;i++){const x1=xOf(points[i].hr),v1=points[i].net,x2=xOf(points[i+1].hr),v2=points[i+1].net;if(v1>=0&&v2>=0){areaPos.push(`M${x1},${y0} L${x1},${yOf(v1).toFixed(1)} L${x2},${yOf(v2).toFixed(1)} L${x2},${y0} Z`);}else if(v1<0&&v2<0){areaNeg.push(`M${x1},${y0} L${x1},${yOf(v1).toFixed(1)} L${x2},${yOf(v2).toFixed(1)} L${x2},${y0} Z`);}else{const t=v1/(v1-v2),xZ=(x1+t*(x2-x1)).toFixed(1);if(v1>=0){areaPos.push(`M${x1},${y0} L${x1},${yOf(v1).toFixed(1)} L${xZ},${y0} Z`);areaNeg.push(`M${xZ},${y0} L${x2},${yOf(v2).toFixed(1)} L${x2},${y0} Z`);}else{areaNeg.push(`M${x1},${y0} L${x1},${yOf(v1).toFixed(1)} L${xZ},${y0} Z`);areaPos.push(`M${xZ},${y0} L${x2},${yOf(v2).toFixed(1)} L${x2},${y0} Z`);}}}
     const linePts=points.map(pt=>`${xOf(pt.hr).toFixed(1)},${yOf(pt.net).toFixed(1)}`).join(' ');
@@ -8469,7 +8464,7 @@ function tSBC(){
     for(let d=1;d<=daysInMo;d++){const dow=new Date(yr,mo-1,d).getDay();if(dow===0||dow===6)continue;days.push({y:yr,m:mo,d,dateStr:`${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`});}
     const _niftyInstr=SBC_INSTR.find(ins=>ins.key==='nifty')||SBC_INSTR[0];
     const points=days.map(day=>{
-      const Jo=JD(day.y,day.m,day.d,9.25-tz+5.5);const Jc=JD(day.y,day.m,day.d,15.5-tz+5.5);
+      const Jo=JD(day.y,day.m,day.d,0-tz+5.5);const Jc=JD(day.y,day.m,day.d,(23+55/60)-tz+5.5);
       const snO=sbcSnapshot(Jo,S.ayMode),snC=sbcSnapshot(Jc,S.ayMode);
       const moonO=snO.planets.find(p=>p.name==='Moon');const moonC=snC.planets.find(p=>p.name==='Moon');
       return {...day,open:Math.round(sbcVerdict(snO,_niftyInstr).net*100)/100,close:Math.round(sbcVerdict(snC,_niftyInstr).net*100)/100,
@@ -8493,9 +8488,9 @@ function tSBC(){
     const closePts=points.map((pt,i)=>`${xOf(i).toFixed(1)},${yOf(pt.close).toFixed(1)}`).join(' ');
     let nakLines='';nakChanges.forEach(c=>{const x=((xOf(c.atIdx-1)+xOf(c.atIdx))/2).toFixed(1);nakLines+=`<line x1="${x}" y1="${PT}" x2="${x}" y2="${H-PB}" stroke="var(--neut)" stroke-width="1" stroke-dasharray="3 2" opacity=".7"/>`;nakLines+=`<text x="${parseFloat(x)+2}" y="${PT+9}" fill="var(--neut)" font-size="7">${c.to.nakNameO}</text>`;});
     let todayMark='';const todayIdx=points.findIndex(p=>p.isToday);if(todayIdx>=0){const x=xOf(todayIdx).toFixed(1);todayMark=`<line x1="${x}" y1="${PT}" x2="${x}" y2="${H-PB}" stroke="var(--neut2)" stroke-width="1" stroke-dasharray="2 2" opacity=".8"/>`;}
-    let dots='';points.forEach((pt,i)=>{const x=xOf(i).toFixed(1);const yo=yOf(pt.open).toFixed(1),yc=yOf(pt.close).toFixed(1);const col=pt.open>0?'var(--merc)':'var(--bear)';const colC=pt.close>0?'var(--acc)':'#ff8888';dots+=`<circle cx="${x}" cy="${yc}" r="1.5" fill="${colC}" opacity=".6"><title>${pt.dateStr} 15:30V: ${pt.close>0?'+':''}${pt.close}</title></circle>`;dots+=`<circle cx="${x}" cy="${yo}" r="${pt.isToday?4:pt.intraNakChange?3.5:2}" fill="${pt.isToday?'var(--neut2)':pt.intraNakChange?'var(--neut)':col}" stroke="${(pt.isToday||pt.intraNakChange)?'var(--bg2)':'none'}" stroke-width="0.8"><title>${pt.dateStr} 9:15V: ${pt.open>0?'+':''}${pt.open} · Moon: ${pt.nakNameO}p${pt.padaO}${pt.intraNakChange?' → '+pt.nakNameC+'p'+pt.padaC+' (intraday shift)':''}</title></circle>`;});
+    let dots='';points.forEach((pt,i)=>{const x=xOf(i).toFixed(1);const yo=yOf(pt.open).toFixed(1),yc=yOf(pt.close).toFixed(1);const col=pt.open>0?'var(--merc)':'var(--bear)';const colC=pt.close>0?'var(--acc)':'#ff8888';dots+=`<circle cx="${x}" cy="${yc}" r="1.5" fill="${colC}" opacity=".6"><title>${pt.dateStr} 23:55V: ${pt.close>0?'+':''}${pt.close}</title></circle>`;dots+=`<circle cx="${x}" cy="${yo}" r="${pt.isToday?4:pt.intraNakChange?3.5:2}" fill="${pt.isToday?'var(--neut2)':pt.intraNakChange?'var(--neut)':col}" stroke="${(pt.isToday||pt.intraNakChange)?'var(--bg2)':'none'}" stroke-width="0.8"><title>${pt.dateStr} 00:00V: ${pt.open>0?'+':''}${pt.open} · Moon: ${pt.nakNameO}p${pt.padaO}${pt.intraNakChange?' → '+pt.nakNameC+'p'+pt.padaC+' (intraday shift)':''}</title></circle>`;});
     const svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block;overflow:visible"><defs><linearGradient id="mg_pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--merc)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--merc)" stop-opacity=".04"/></linearGradient><linearGradient id="mg_neg" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="var(--bear)" stop-opacity=".3"/><stop offset="100%" stop-color="var(--bear)" stop-opacity=".04"/></linearGradient></defs>${grid}${xLabels}<path d="${areaPos.join('')}" fill="url(#mg_pos)"/><path d="${areaNeg.join('')}" fill="url(#mg_neg)"/>${todayMark}${nakLines}<polyline points="${closePts}" fill="none" stroke="#3a7090" stroke-width="1" stroke-dasharray="3 2" opacity=".7"/><polyline points="${openPts}" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-linejoin="round"/>${dots}</svg>`;
-    return `<div class="pnl"><div class="ph"><span class="dot"></span>विश्वा MONTHLY ARC — ${(SBC_INSTR[0]||{}).name||''} · ${points.length} days</div><div class="pb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><button onclick="gs({sbcMonthOff:(S.sbcMonthOff||0)-1})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--acc);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1">◀</button><span style="font-size:11px;font-weight:700;color:var(--acc);min-width:80px;text-align:center">${MON[mo]} ${yr}</span><button onclick="gs({sbcMonthOff:(S.sbcMonthOff||0)+1})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--acc);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1">▶</button><button onclick="gs({sbcMonthOff:0})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--tx3);padding:3px 8px;border-radius:3px;cursor:pointer;font-size:10.5px">↺ Now</button><span style="font-size:10.5px;color:var(--tx3);margin-left:4px"><span style="color:var(--acc)">——</span> 9:15V &nbsp;<span style="color:#3a7090">- -</span> 15:30V &nbsp;<span style="color:var(--neut)">◆</span> nak shift &nbsp;<span style="color:var(--neut2)">|</span> today</span></div><div style="overflow-x:auto;padding-bottom:4px">${svg}</div></div></div>`;
+    return `<div class="pnl"><div class="ph"><span class="dot"></span>विश्वा MONTHLY ARC — ${(SBC_INSTR[0]||{}).name||''} · ${points.length} days</div><div class="pb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><button onclick="gs({sbcMonthOff:(S.sbcMonthOff||0)-1})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--acc);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1">◀</button><span style="font-size:11px;font-weight:700;color:var(--acc);min-width:80px;text-align:center">${MON[mo]} ${yr}</span><button onclick="gs({sbcMonthOff:(S.sbcMonthOff||0)+1})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--acc);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1">▶</button><button onclick="gs({sbcMonthOff:0})" style="background:var(--bg2);border:1px solid var(--bd2);color:var(--tx3);padding:3px 8px;border-radius:3px;cursor:pointer;font-size:10.5px">↺ Now</button><span style="font-size:10.5px;color:var(--tx3);margin-left:4px"><span style="color:var(--acc)">——</span> 00:00V &nbsp;<span style="color:#3a7090">- -</span> 23:55V &nbsp;<span style="color:var(--neut)">◆</span> nak shift &nbsp;<span style="color:var(--neut2)">|</span> today</span></div><div style="overflow-x:auto;padding-bottom:4px">${svg}</div></div></div>`;
   })()}
 
   <!-- 15-LIMB VARNADI PANCHAK PANEL -->
