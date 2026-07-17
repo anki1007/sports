@@ -3548,7 +3548,7 @@ const VASU_A   = new Set([0,360,30,72,36,150,135]);
 const VASU_TABLE = {
   Sun:[['Steep rise',1],['Rise with corrections',0.5],['Likely rise',0.8],['Steady',0]],
   Moon:[['Rise/Steady, downward tendency',-0.2],['Steady',0],['Firm',0.5],['Fall with recovery',-0.5]],
-  Mars:[['Rise with minor fall',0.4],['Steady, no recovery',-0.3],['Steady',0],['Bearishness',-1]],
+  Mars:[['Rise with minor fall',0.4],['Steady, no recovery',-0.3],['Steady',0],['Negative energy',-1]],
   Mercury:[['Steady with reactions',0.2],['Steady tendency to fall',-0.4],['Firm with occasional fall',0.3],['Fall with recovery',-0.5]],
   Jupiter:[['Rise with corrections',0.5],['Fall with recovery',-0.5],['Firm',0.5],['Fall with minor rise',-0.3]],
   Venus:[['Positive',1],['Steady',0],['Rise with correction',0.5],['Firm',0.5]],
@@ -10532,7 +10532,7 @@ function tSharParivartan(mode){
     : '◓ KRANTI — Monthly Declination (Kranti) of Planets';
   const desc = isShar
     ? `<b style="color:var(--neut)">SHAR PARIVARTAN</b> = a planet's ecliptic latitude (Shar) crossing 0° (North ↔ South). On the crossing day that planet dominates the day's energy and its aspects & all three Vedh become ineffective — the strongest signal. Moon crosses twice a month; big / slow planets cross when nearer Earth. <b style="color:var(--neut)">Yellow cell</b> = latitude crossed 0° (Shar Parivartan). Sun / Rahu / Ketu have no latitude (Shar 0).`
-    : `CHAPTER 21: a planet changing to <b style="color:var(--bear)">NORTH</b> declination → <b style="color:var(--bear)">Bearishness</b>; to <b style="color:var(--bull)">SOUTH</b> → <b style="color:var(--bull)">Bullishness</b> (continues a long time). During a declination change, aspects & all three Vedh become ineffective — this is the strongest signal. Reverse the effect if the planet is Combust / Retrograde / Debilitated. Moon changes twice a month; big planets change when nearer Earth.`;
+    : `CHAPTER 21: a planet changing to <b style="color:var(--bear)">NORTH</b> declination → <b style="color:var(--bear)">Negative energy</b>; to <b style="color:var(--bull)">SOUTH</b> → <b style="color:var(--bull)">Positive energy</b> (continues a long time). During a declination change, aspects & all three Vedh become ineffective — this is the strongest signal. Reverse the effect if the planet is Combust / Retrograde / Debilitated. Moon changes twice a month; big planets change when nearer Earth.`;
   const note = isShar
     ? 'Shar = ecliptic latitude (N/S of the ecliptic plane). Orange = North, Green = South. A yellow cell marks the day latitude crosses 0° (Shar Parivartan). Sun / Rahu / Ketu always Shar 0. Snapshot ~09:30 IST.'
     : 'Kranti = equatorial declination (N/S of equator). Orange = North, Green = South. A COLOURED cell = declination parallel — two planets within 1° (same colour = same pair), held while the parallel lasts. Snapshot ~09:30 IST.';
