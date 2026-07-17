@@ -12721,26 +12721,44 @@ window.tWorldClock=function(){
 // Replaces the old price-overlay charts: plots geoLat/geoLon from the
 // inlined VSOP87/ELP engine over a selectable window. No market data.
 const AL_BODIES=['Moon','Mercury','Venus','Mars','Jupiter','Saturn','Rahu'];
+// View state: t0/t1 = window edges in days relative to the selected date.
+window.ALV=window.ALV||{t0:-60,t1:120};
+window.alReset=function(){
+  const span=parseInt(S.alRange||'180',10);
+  window.ALV={t0:-Math.round(span/3), t1:Math.round(span*2/3)};
+  gs({_alTick:(S._alTick||0)+1});
+};
+window.alZoom=function(f,cx){ // f<1 zoom in, f>1 zoom out; cx = anchor fraction 0..1 (default centre)
+  const v=window.ALV, w=v.t1-v.t0, frac=cx==null?0.5:cx, c=v.t0+w*frac;
+  const nw=Math.max(7,Math.min(2400,w*f));
+  window.ALV={t0:c-nw*frac, t1:c+nw*(1-frac)};
+  gs({_alTick:(S._alTick||0)+1});
+};
+window.alPan=function(frac){
+  const v=window.ALV, d=(v.t1-v.t0)*frac;
+  window.ALV={t0:v.t0+d,t1:v.t1+d};
+  gs({_alTick:(S._alTick||0)+1});
+};
 function alSeries(mode){
   const dp=dobParts(S.date)||{y:2026,mo:1,dy:1};
   const J0=JD(dp.y,dp.mo,dp.dy,12);
-  const span=parseInt(S.alRange||'180',10);           // days total
-  const back=Math.round(span/3);
-  const step=span>200?2:1;
-  const bodies=(S.alBodies?S.alBodies.split(','):['Moon','Mercury','Venus','Mars']).filter(b=>AL_BODIES.includes(b));
+  const v=window.ALV, span=v.t1-v.t0;
+  const step=Math.max(span/240, span>200?2:(span<20?0.125:1));
+  const bodies=(S.alBodies!=null?S.alBodies.split(',').filter(Boolean):['Moon','Mercury','Venus','Mars']).filter(b=>AL_BODIES.includes(b));
   const out={};
   for(const b of bodies){
     const pts=[];
-    for(let d=-back;d<=span-back;d+=step){
+    for(let d=v.t0;d<=v.t1+1e-9;d+=step){
       const J=J0+d;
       pts.push({d, v: mode==='lat'?geoLat(b,J):n360(geoLon(b,J)-getAyanamsa(J,S.ayMode))});
     }
     out[b]=pts;
   }
-  return {bodies,out,back,span,step};
+  return {bodies,out,t0:v.t0,t1:v.t1,span,step};
 }
 function alChart(mode){
-  const {bodies,out,back,span}=alSeries(mode);
+  const {bodies,out,t0,t1,span}=alSeries(mode);
+  const back=-t0;
   const W=1060,H=430,L=52,R=14,T=16,B=30,pw=W-L-R,ph=H-T-B;
   let ymin,ymax;
   if(mode==='lat'){
@@ -12761,30 +12779,72 @@ function alChart(mode){
     ? [...Array(2*Math.abs(ymax)+1)].map((_,i)=>ymin+i).filter(v=>Number.isInteger(v))
     : [0,60,120,180,240,300,360];
   const grid=gridY.map(v=>`<line x1="${L}" y1="${Y(v)}" x2="${W-R}" y2="${Y(v)}" stroke="var(--bd)" stroke-width="${v===0&&mode==='lat'?1.4:0.5}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--tx3)">${v}°</text>`).join('');
-  const months=[]; for(let d=-back;d<=span-back;d+=Math.max(15,Math.round(span/12))){
+  const months=[]; for(let d=-back;d<=span-back;d+=Math.max(1,Math.round(span/12))){
     const dt=new Date(S.date+'T12:00:00'); dt.setDate(dt.getDate()+d);
     months.push(`<line x1="${X(d)}" y1="${T}" x2="${X(d)}" y2="${H-B}" stroke="var(--bd)" stroke-width="0.4"/><text x="${X(d)}" y="${H-10}" text-anchor="middle" font-size="9.5" fill="var(--tx3)">${dt.getDate()}/${dt.getMonth()+1}</text>`);}
   const todayX=X(0);
-  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--bg1);border:1px solid var(--bd);border-radius:4px">${grid}${months.join('')}
+  return`<svg id="alSVG" viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--bg1);border:1px solid var(--bd);border-radius:4px;cursor:grab;touch-action:none;user-select:none">${grid}${months.join('')}
     <line x1="${todayX}" y1="${T}" x2="${todayX}" y2="${H-B}" stroke="var(--acc)" stroke-dasharray="4 3" stroke-width="1.2"/>
     <text x="${todayX+4}" y="${T+12}" font-size="10" fill="var(--acc)">${S.date}</text>${paths}</svg>`;
 }
+window.alToggleBody=function(b,on){
+  const cur=S.alBodies!=null?S.alBodies.split(',').filter(Boolean):['Moon','Mercury','Venus','Mars'];
+  const next=on?cur.concat(cur.includes(b)?[]:[b]):cur.filter(x=>x!==b);
+  window._alDDopen=true;
+  gs({alBodies:next.join(',')});
+};
 function alTab(mode){
-  const bodies=S.alBodies?S.alBodies.split(','):['Moon','Mercury','Venus','Mars'];
-  const btn=(b)=>{
-    const on=bodies.includes(b);
-    const next=on?bodies.filter(x=>x!==b):bodies.concat(b);
-    return`<button onclick="gs({alBodies:'${next.join(',')}'})" class="nb${on?' on':''}" style="padding:3px 12px;border:1px solid var(--bd2)">${b}</button>`;};
-  const rbtn=(d,l)=>`<button onclick="gs({alRange:'${d}'})" class="nb${(S.alRange||'180')===String(d)?' on':''}" style="padding:3px 10px;border:1px solid var(--bd2)">${l}</button>`;
+  const bodies=S.alBodies!=null?S.alBodies.split(',').filter(Boolean):['Moon','Mercury','Venus','Mars'];
+  const v=window.ALV, span=Math.round(v.t1-v.t0);
+  const rbtn=(d,l)=>`<button onclick="gs({alRange:'${d}'});alReset()" class="nb${(S.alRange||'180')===String(d)?' on':''}" style="padding:3px 10px;border:1px solid var(--bd2)">${l}</button>`;
+  const tbtn=(onc,l,tip)=>`<button onclick="${onc}" title="${tip}" style="background:var(--bg2);color:var(--tx1);border:1px solid var(--bd2);border-radius:3px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:12px">${l}</button>`;
+  const dd=`<div class="cg" style="position:relative">
+    <button onclick="window._alDDopen=!window._alDDopen;gs({_alTick:(S._alTick||0)+1})" class="ci" style="cursor:pointer;min-width:170px;text-align:left">${bodies.length?bodies.join(', '):'— select planets —'} ▾</button>
+    <div style="display:${window._alDDopen?'block':'none'};position:absolute;top:100%;left:0;z-index:99;min-width:180px;background:var(--bg1);border:1px solid var(--bd2);box-shadow:0 6px 18px #0008;padding:6px 10px">
+      ${AL_BODIES.map(b=>`<label style="display:flex;gap:8px;align-items:center;padding:3px 0;cursor:pointer;font-size:12.5px;color:${pc(b)}">
+        <input type="checkbox" ${bodies.includes(b)?'checked':''} onchange="alToggleBody('${b}',this.checked)"> ${b}</label>`).join('')}
+      <div style="border-top:1px solid var(--bd);margin-top:5px;padding-top:5px;display:flex;gap:8px">
+        <a href="#" onclick="window._alDDopen=true;gs({alBodies:'${AL_BODIES.join(',')}'});return false" style="font-size:10.5px;color:var(--acc)">all</a>
+        <a href="#" onclick="window._alDDopen=true;gs({alBodies:''});return false" style="font-size:10.5px;color:var(--acc)">none</a>
+        <a href="#" onclick="window._alDDopen=false;gs({_alTick:(S._alTick||0)+1});return false" style="font-size:10.5px;color:var(--tx3);margin-left:auto">close</a>
+      </div>
+    </div>
+  </div>`;
   return pnl(mode==='lat'
       ? 'PLANET ECLIPTIC LATITUDE (SHAR) — N/S of the ecliptic · zero-crossing = Shar Parivartan (strongest day-energy signal)'
       : 'PLANET SIDEREAL LONGITUDE — 0–360° through the zodiac (breaks at 360→0 wrap)',`
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-      <span class="cl">PLANETS</span>${AL_BODIES.map(btn).join('')}
-      <span class="cl" style="margin-left:14px">WINDOW</span>${rbtn(90,'90d')}${rbtn(180,'180d')}${rbtn(365,'1Y')}
+      <span class="cl">PLANETS</span>${dd}
+      <span class="cl" style="margin-left:10px">WINDOW</span>${rbtn(90,'90d')}${rbtn(180,'180d')}${rbtn(365,'1Y')}
+      <span class="cl" style="margin-left:10px">VIEW</span>
+      ${tbtn('alZoom(0.6)','＋','Zoom in')}
+      ${tbtn('alZoom(1.6667)','－','Zoom out')}
+      ${tbtn('alPan(-0.25)','◀','Pan left')}
+      ${tbtn('alPan(0.25)','▶','Pan right')}
+      ${tbtn('alReset()','⟲ Reset','Reset view')}
+      <span style="font-size:10.5px;color:var(--tx3)">showing ${span}d · drag to pan · wheel to zoom</span>
     </div>
-    ${alChart(mode)}
+    ${bodies.length?alChart(mode):'<div style="padding:30px;color:var(--tx3)">Select at least one planet from the dropdown.</div>'}
     <div style="font-size:10.5px;color:var(--tx3);margin-top:6px">Computed live from the inlined VSOP87/ELP astronomy engine at the selected venue &amp; ayanamsa. Dashed line = selected date.</div>`);
+}
+// wheel-zoom + drag-pan wiring (re-attached after every render)
+function alWire(){
+  const svg=document.getElementById('alSVG'); if(!svg||svg.dataset.wired) return;
+  svg.dataset.wired='1';
+  const frac=e=>{const r=svg.getBoundingClientRect();return Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));};
+  svg.addEventListener('wheel',e=>{e.preventDefault();alZoom(e.deltaY>0?1.25:0.8,frac(e));},{passive:false});
+  let drag=null;
+  svg.addEventListener('pointerdown',e=>{drag={x:e.clientX,v:{...window.ALV}};svg.setPointerCapture(e.pointerId);svg.style.cursor='grabbing';});
+  svg.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    const r=svg.getBoundingClientRect(), w=drag.v.t1-drag.v.t0;
+    const dd=-(e.clientX-drag.x)/r.width*w;
+    window.ALV={t0:drag.v.t0+dd,t1:drag.v.t1+dd};
+    if(!window._alRAF){window._alRAF=requestAnimationFrame(()=>{window._alRAF=null;gs({_alTick:(S._alTick||0)+1});});}
+  });
+  const up=e=>{if(drag){drag=null;svg.style.cursor='grab';}};
+  svg.addEventListener('pointerup',up); svg.addEventListener('pointercancel',up);
+  svg.addEventListener('dblclick',()=>alReset());
 }
 window.tAstroLat=()=>alTab('lat');
 window.tAstroLon=()=>alTab('lon');
@@ -12812,7 +12872,10 @@ window.tSBCsports=function(){
 };
 
 // after every render: async fills
-window.sportsAfterRender=function(){ if(S.tab==='match') setTimeout(loadWeather,60); };
+window.sportsAfterRender=function(){
+  if(S.tab==='match') setTimeout(loadWeather,60);
+  if(S.tab==='planlat'||S.tab==='planlon') alWire();
+};
 
 // initial paint now that the sports tabs exist
 render();
