@@ -2,6 +2,8 @@
 
 > **A Next-Generation Astrology-Powered Sports Forecasting Platform**
 
+**Live app:** https://anki1007.github.io/sports — open `index.html` (single file, works fully offline; weather panel needs internet).
+
 ## Overview
 
 Sports Astral Forecast Engine is a professional prediction platform that combines **Vedic Astrology**, **KP Astrology**, **Western Astrology**, **Astronomical Ephemeris**, and **Numerology** to analyze the energetic conditions surrounding sporting events.
