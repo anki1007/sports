@@ -12583,8 +12583,54 @@ const LOSHU_PLANES=[
 ];
 const NUM_MEANING={1:'Leader · Sun — independent, pioneering captaincy',2:'Diplomat · Moon — intuitive, team-binding',3:'Creator · Jupiter — expansive, optimistic play',4:'Builder · Rahu — unorthodox, disciplined grinder',5:'Communicator · Mercury — fast, adaptable all-rounder',6:'Harmoniser · Venus — stylish, crowd-favourite',7:'Analyst · Ketu — instinctive, mystery performer',8:'Executor · Saturn — patient, big-match temperament',9:'Warrior · Mars — aggressive, high-energy finisher',11:'Master Intuitive — inspirational under lights',22:'Master Builder — dynasty-scale achievement',33:'Master Teacher — selfless leadership'};
 
+// ── deep-numerology data tables (Ank Jyotish worksheet style) ──────
+// Friend / Ordinary / Enemy per number. Rows 1,3,4 follow the classical
+// worksheet chart; the rest derive from planet maitri of NUM_PLANET.
+const ANK_MAITRI={
+  1:{f:[2,3,5],o:[1,4,9],e:[6,7,8]},
+  2:{f:[1,3,5],o:[2,4,6,9],e:[7,8]},
+  3:{f:[1,2,5],o:[3,6,7],e:[4,8,9]},
+  4:{f:[1,6,8],o:[3,4,5,7],e:[2,9]},
+  5:{f:[1,4,6],o:[3,5,7,8,9],e:[2]},
+  6:{f:[5,7,8],o:[3,4,6,9],e:[1,2]},
+  7:{f:[3,6,9],o:[4,5,7,8],e:[1,2]},
+  8:{f:[5,6],o:[3,4,7,8],e:[1,2,9]},
+  9:{f:[1,2,3],o:[4,6,7,8,9],e:[5]}
+};
+const PSY_PROFILE={
+  1:{lord:'Sun',day:'Sunday',col:'Gold · Orange',dir:'East',guna:'Sattva',temp:'Pitta',nature:'Purposeful leader',strength:'Pioneering, courageous, self-motivated, determined',prof:'Captains, leaders, managers, founders — thrives with authority & autonomy'},
+  2:{lord:'Moon',day:'Monday',col:'White · Cream',dir:'North-West',guna:'Sattva',temp:'Kapha',nature:'Intuitive diplomat',strength:'Adaptable, supportive, imaginative, team-binding',prof:'Vice-captains, coaches, strategists, mentors, healers'},
+  3:{lord:'Jupiter',day:'Thursday',col:'Yellow · Saffron',dir:'North-East',guna:'Sattva',temp:'Pitta',nature:'Expansive optimist',strength:'Creative, wise, disciplined, uplifting',prof:'Coaches, teachers, advisors, commentators, all-format players'},
+  4:{lord:'Rahu',day:'Saturday',col:'Grey · Electric Blue',dir:'South-West',guna:'Tamas',temp:'Vata',nature:'Unorthodox grinder',strength:'Disciplined, methodical, surprising, resilient',prof:'Technical specialists, analysts, unconventional match-winners'},
+  5:{lord:'Mercury',day:'Wednesday',col:'Green · Turquoise',dir:'North',guna:'Rajas',temp:'Vata',nature:'Fast communicator',strength:'Versatile, quick, businesslike, adaptable all-rounder',prof:'All-rounders, wicket-keepers, playmakers, negotiators'},
+  6:{lord:'Venus',day:'Friday',col:'Pink · White',dir:'South-East',guna:'Rajas',temp:'Kapha',nature:'Stylish harmoniser',strength:'Artistic, magnetic, luxurious, crowd-favourite',prof:'Stylish batters, No.10s, brand faces, entertainers'},
+  7:{lord:'Ketu',day:'Tuesday',col:'Smoke Grey · Pearl',dir:'South-West',guna:'Tamas',temp:'Vata',nature:'Mystic analyst',strength:'Intuitive, researching, unpredictable spin',prof:'Spinners, analysts, scouts, tacticians'},
+  8:{lord:'Saturn',day:'Saturday',col:'Dark Blue · Black',dir:'West',guna:'Tamas',temp:'Vata',nature:'Patient executor',strength:'Enduring, disciplined, big-match temperament',prof:'Test specialists, marathon runners, administrators'},
+  9:{lord:'Mars',day:'Tuesday',col:'Red · Crimson',dir:'South',guna:'Rajas',temp:'Pitta',nature:'Warrior finisher',strength:'Aggressive, energetic, protective, fearless',prof:'Fast bowlers, strikers, finishers, defenders'}
+};
+function digitsOf(str){return String(str||'').replace(/\D/g,'').split('').map(Number).filter(n=>n>0);}
+function nameDigits(name){const a=[];for(const ch of (name||'').toLowerCase())if(PYTHAGOREAN[ch])a.push(PYTHAGOREAN[ch]);return a;}
+function gridCounts(arr){const g={};arr.forEach(n=>{const r=n>9?reduce1(n):n;if(r)g[r]=(g[r]||0)+1;});return g;}
+function gridSVG(layout,g,title){
+  return`<div style="text-align:center"><div style="font-size:10.5px;color:var(--acc);font-weight:700;margin-bottom:3px">${title}</div>
+  <table style="border-collapse:collapse;margin:0 auto">${layout.map(row=>`<tr>${row.map(n=>`<td style="width:44px;height:40px;text-align:center;border:1px solid var(--bd2);font-family:monospace;font-size:14px;color:${g[n]?'var(--bull)':'var(--tx3)'}">${g[n]?String(n).repeat(Math.min(4,g[n])):'·'}</td>`).join('')}</tr>`).join('')}</table>
+  <div style="font-size:10px;color:var(--bear);margin-top:3px">missing: ${[1,2,3,4,5,6,7,8,9].filter(d=>!g[d]).join(', ')||'none'}</div></div>`;
+}
+const LOSHU_LAYOUT=[[4,9,2],[3,5,7],[8,1,6]];
+const VEDIC_LAYOUT=[[3,1,9],[6,7,5],[2,8,4]];
+function planesRow(src,arr){
+  const g=gridCounts(arr);
+  const cnt=d=>d.reduce((s,n)=>s+(g[n]||0),0);
+  return`<tr><td style="color:var(--tx1);font-weight:700">${src}</td>
+    <td style="text-align:center">${cnt([4,5])}</td><td style="text-align:center">${cnt([1,8])}</td>
+    <td style="text-align:center">${cnt([2,3,6])}</td><td style="text-align:center">${cnt([7,9])}</td>
+    <td style="font-size:10.5px;color:var(--bear)">${[1,2,3,4,5,6,7,8,9].filter(d=>!g[d]).join(', ')||'—'}</td></tr>`;
+}
 window.tNumero=function(){
-  const name=S.numName||'Sports Astral', dob=S.numDob||'2000-01-01';
+  const first=S.numFirst||'', middle=S.numMiddle||'', family=S.numFamily||'';
+  const name=(first||middle||family)?[first,middle,family].filter(Boolean).join(' '):(S.numName||'Sports Astral');
+  const dob=S.numDob||'2000-01-01';
+  const mobile=S.numMobile||'';
   const N=numerologyOf(name,dob,S.numGender||'M');
   const p=dobParts(dob);
   const cell=(lbl,val,extra,col)=>`<div style="min-width:118px"><div style="font-size:10px;color:var(--tx3)">${lbl}</div><div style="font-size:20px;font-weight:800;color:${col||'var(--acc)'}">${val??'—'}</div>${extra?`<div style="font-size:10px;color:var(--tx2);max-width:170px">${extra}</div>`:''}</div>`;
@@ -12596,6 +12642,37 @@ window.tNumero=function(){
   // ── Chaldean ──
   const compound=N.nameTotal>9?reduce1(N.nameTotal)!==N.nameTotal?N.nameTotal:N.nameTotal:null;
   const compKey=N.nameTotal>=10?(N.nameTotal>52?((N.nameTotal-1)%42)+10:N.nameTotal):null;
+  // ── name-part breakdown (worksheet style) ──
+  const partRow=(lbl,nm)=>{
+    if(!nm) return '';
+    const t=pythName(nm), v=pythName(nm,'v'), c=pythName(nm,'c');
+    return`<tr><td style="color:var(--tx1);font-weight:700">${lbl}</td><td>${nm}</td>
+      <td style="text-align:center;font-family:monospace">${t.total} → <b style="color:var(--acc)">${t.num}</b></td>
+      <td style="text-align:center;font-family:monospace">${v.total} → <b style="color:var(--moon)">${v.num}</b></td>
+      <td style="text-align:center;font-family:monospace">${c.total} → <b style="color:var(--tx2)">${c.num}</b></td></tr>`;
+  };
+  // ── mobile number ──
+  const mobDigits=digitsOf(mobile);
+  const mobTotal=mobDigits.reduce((s,n)=>s+n,0);
+  const mobNum=mobTotal?reduce1(mobTotal):null;
+  // ── challenge cycles (Pythagorean) & bridge ──
+  const ch1=p?Math.abs(reduce1(p.mo)-reduce1(p.dy)):null;
+  const ch2=p?Math.abs(reduce1(p.dy)-reduce1(digSum(p.y))):null;
+  const ch3=(ch1!=null&&ch2!=null)?Math.abs(ch1-ch2):null;
+  const ch4=p?Math.abs(reduce1(p.mo)-reduce1(digSum(p.y))):null;
+  const lpR=lp?reduce1(lp):null, exR=expr.num?reduce1(expr.num):null;
+  const bridge=(lpR&&exR)?Math.abs(lpR-exR):null;
+  // ── ank maitri (friend/ordinary/enemy) table ──
+  const maitriCols=[['Driver (Mulank)',N.birth],['Conductor (Bhagyank)',N.destiny],['Name (DN)',exR],['Mobile',mobNum]].filter(x=>x[1]);
+  const maitriRow=k=>maitriCols.map(([,n])=>`<td style="text-align:center;font-family:monospace;color:${k==='f'?'var(--bull)':k==='e'?'var(--bear)':'var(--tx2)'}">${(ANK_MAITRI[n]||{})[k]?.join(' ')||'—'}</td>`).join('');
+  const favSet=new Set(), enemySet=new Set();
+  maitriCols.forEach(([,n])=>{(ANK_MAITRI[n]||{f:[]}).f.forEach(x=>favSet.add(x));});
+  maitriCols.forEach(([,n])=>{(ANK_MAITRI[n]||{e:[]}).e.forEach(x=>enemySet.add(x));});
+  const overallFav=[...favSet].filter(x=>!enemySet.has(x)).sort();
+  // ── grids: vedic (DOB+driver+conductor+kua) · lo shu birth/name/mobile ──
+  const birthArr=digitsOf(dob);
+  const vedicArr=birthArr.concat([N.birth,N.destiny,N.kua].filter(Boolean));
+  const nameArr=nameDigits(name);
   // ── Lo Shu planes ──
   const g=N.loShu||{};
   const planes=LOSHU_PLANES.map(pl=>{
@@ -12609,10 +12686,67 @@ window.tNumero=function(){
   return`
   <div class="pnl"><div class="ph"><span class="dot"></span>WORLD NUMEROLOGY — VEDIC · CHALDEAN · PYTHAGOREAN · LO SHU · KUA</div>
   <div class="pb"><div class="ctrl-row" style="flex-wrap:wrap;gap:8px">
-    ${inp('NAME','numName','player / team name')}
+    ${inp('FIRST NAME','numFirst','e.g. Ankit')}
+    ${inp('MIDDLE NAME','numMiddle','optional')}
+    ${inp('FAMILY NAME','numFamily','e.g. Gupta')}
     ${inp('DATE OF BIRTH','numDob','','date')}
+    ${inp('MOBILE NUMBER','numMobile','digits only')}
     ${sel('GENDER (for Kua)','numGender',['M','F'])}
-  </div></div></div>
+  </div>
+  <div style="font-size:10px;color:var(--tx3);margin-top:4px">Analysing: <b style="color:var(--acc)">${name}</b>${mobile?` · mobile ${mobile}`:''} — leave name parts blank to use a single full name via Match Forecast / old NAME field.</div>
+  </div></div>
+
+  ${pnl('NAME BREAKDOWN (Pythagorean letter values)',`
+    <div class="ts"><table class="tbl"><thead><tr><th>Part</th><th>Name</th><th>Total → Number</th><th>Heart (vowels)</th><th>Personality (consonants)</th></tr></thead><tbody>
+      ${partRow('First name',first)}${partRow('Middle name',middle)}${partRow('Family name',family)}
+      ${partRow('FULL NAME',name)}
+    </tbody></table></div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:10px">
+      ${cell('DESTINY (DN)',exR,'total name '+expr.total)}
+      ${cell('HEART DESIRE (HD)',soul.num,'vowels — inner drive')}
+      ${cell('PERSONALITY (PN)',pers.num,'consonants — outer face')}
+      ${cell('CHALDEAN NAME',N.nameNum,'compound '+(N.nameTotal>9?N.nameTotal:'—'))}
+      ${mobNum?cell('MOBILE NUMBER',mobNum,'total '+mobTotal+(N.birth?(ANK_MAITRI[N.birth]?.f.includes(mobNum)?' · friend of driver ✓':ANK_MAITRI[N.birth]?.e.includes(mobNum)?' · ⚠ enemy of driver':' · ordinary'):'')):''}
+    </div>`)}
+
+  ${pnl('ANK MAITRI — FRIEND · ORDINARY · ENEMY (per your core numbers)',`
+    <div class="ts"><table class="tbl"><thead><tr><th></th>${maitriCols.map(([l,n])=>`<th style="text-align:center">${l}<br><span style="font-family:monospace;font-size:15px;color:${pc(NUM_PLANET[n])}">${n}</span></th>`).join('')}</tr></thead><tbody>
+      <tr><td style="color:var(--bull);font-weight:700">Friend</td>${maitriRow('f')}</tr>
+      <tr><td style="color:var(--tx2);font-weight:700">Ordinary</td>${maitriRow('o')}</tr>
+      <tr><td style="color:var(--bear);font-weight:700">Enemy</td>${maitriRow('e')}</tr>
+    </tbody></table></div>
+    <div style="font-size:11.5px;color:var(--tx1);margin-top:6px">Overall favourable digits (friend of any core number, enemy of none): <b style="color:var(--bull)">${overallFav.join(', ')||'—'}</b> — use for jersey, dates, mobile digits.</div>`)}
+
+  ${pnl('GRIDS — VEDIC &amp; LO SHU (birth · name · mobile)',`
+    <div style="display:flex;gap:26px;flex-wrap:wrap;justify-content:flex-start">
+      ${gridSVG(VEDIC_LAYOUT,gridCounts(vedicArr),'VEDIC GRID (DOB + Driver + Conductor + Kua)')}
+      ${gridSVG(LOSHU_LAYOUT,gridCounts(birthArr),'LO SHU — BIRTH DATE')}
+      ${nameArr.length?gridSVG(LOSHU_LAYOUT,gridCounts(nameArr),'LO SHU — NAME'):''}
+      ${mobDigits.length?gridSVG(LOSHU_LAYOUT,gridCounts(mobDigits),'LO SHU — MOBILE NO.'):''}
+    </div>
+    <div style="font-size:10.5px;color:var(--tx3);margin-top:6px">Vedic grid uses the classical 3-1-9 / 6-7-5 / 2-8-4 placement; Lo Shu uses 4-9-2 / 3-5-7 / 8-1-6. Repeated digits strengthen a cell (shown up to ×4).</div>`)}
+
+  ${pnl('PLANES OF EXPRESSION — Physical (4,5) · Mental (1,8) · Emotional (2,3,6) · Intuitive (7,9)',`
+    <div class="ts"><table class="tbl"><thead><tr><th>Source</th><th>Physical</th><th>Mental</th><th>Emotional</th><th>Intuitive</th><th>Missing numbers</th></tr></thead><tbody>
+      ${planesRow('Birth date',birthArr)}
+      ${nameArr.length?planesRow('Name',nameArr):''}
+      ${mobDigits.length?planesRow('Mobile no.',mobDigits):''}
+    </tbody></table></div>`)}
+
+  ${N.birth&&PSY_PROFILE[N.birth]?pnl(`PSYCHIC / DRIVER PROFILE — ${N.birth} · ${PSY_PROFILE[N.birth].lord}`,`
+    <div class="ts"><table class="tbl"><tbody>
+      ${[['Lord',PSY_PROFILE[N.birth].lord],['Favourable day',PSY_PROFILE[N.birth].day],['Colour',PSY_PROFILE[N.birth].col],['Direction',PSY_PROFILE[N.birth].dir],['Guna (nature)',PSY_PROFILE[N.birth].guna],['Temperament',PSY_PROFILE[N.birth].temp],['Nature',PSY_PROFILE[N.birth].nature],['Strengths',PSY_PROFILE[N.birth].strength],['Suited roles',PSY_PROFILE[N.birth].prof]].map(([k,v])=>`<tr><td style="color:var(--tx3);width:150px">${k}</td><td style="color:var(--tx1)">${v}</td></tr>`).join('')}
+    </tbody></table></div>`):''}
+
+  ${pnl('CYCLES &amp; CHALLENGES',`
+    <div style="display:flex;gap:22px;flex-wrap:wrap">
+      ${cell('CHALLENGE 1',ch1,'month vs day')}
+      ${cell('CHALLENGE 2',ch2,'day vs year')}
+      ${cell('CHALLENGE 3',ch3,'C1 vs C2')}
+      ${cell('CHALLENGE 4',ch4,'month vs year')}
+      ${cell('BRIDGE',bridge,'Life Path ↔ Destiny gap')}
+      ${cell('MATURITY',maturity,'Life Path + Expression')}
+    </div>`)}
 
   ${pnl(`VEDIC (ANK JYOTISH) — ${N.name}`,`<div style="display:flex;gap:22px;flex-wrap:wrap">
     ${cell('MOOLANK (Psychic)',N.birth,N.birth?NUM_PLANET[N.birth]+' — day of birth':'')}
