@@ -4425,7 +4425,7 @@ function rHdr(){
 // NAV
 // ═══════════════════════════════════════════════════════════════════
 function rNav(){
-  const tabs=[['match','🏆 Match Forecast'],['muhurat','🕉 Match Muhurat'],['numero','🔢 Numerology'],['worldclock','🌍 World Clock'],['panchak','◔ Panchak'],['transit','⊞ Transit Cal'],['kundali','◇ Team Horoscope'],['bhav','⌂ Bhav Phal'],['ashtaka','⊡ Ashtakavarga'],['kp','⊕ KP Planets'],['charts','◈ D1·D9'],['sbc','⬡ SBC Chakra'],['shar','⟐ Shar'],['kranti','◓ Kranti'],['planlat','🪐 Planet Lat'],['planlon','🛰 Planet Lon']];
+  const tabs=[['match','🏆 Match Forecast'],['muhurat','🕉 Match Muhurat'],['numero','🔢 Numerology'],['numrel','🔗 Number Bonds'],['worldclock','🌍 World Clock'],['panchak','◔ Panchak'],['transit','⊞ Transit Cal'],['kundali','◇ Team Horoscope'],['bhav','⌂ Bhav Phal'],['ashtaka','⊡ Ashtakavarga'],['kp','⊕ KP Planets'],['charts','◈ D1·D9'],['sbc','⬡ SBC Chakra'],['shar','⟐ Shar'],['kranti','◓ Kranti'],['planlat','🪐 Planet Lat'],['planlon','🛰 Planet Lon']];
   const closeRow=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 8px 14px;border-bottom:1px solid var(--bd);background:var(--bg1);flex-shrink:0">
     <span style="font-size:11.5px;color:var(--tx3);letter-spacing:.08em">MENU</span>
     <button onclick="closeNav()" style="background:none;border:none;color:var(--tx2);font-size:20px;line-height:1;cursor:pointer;padding:2px 6px">✕</button>
@@ -4435,7 +4435,7 @@ function rNav(){
 
 function rMain(){
   const sp=k=>()=>window[k]?window[k]():'<div style="padding:20px;color:var(--tx3)">Loading module…</div>';
-  const fns={match:sp('tMatch'),muhurat:sp('tMuhurat'),numero:sp('tNumero'),worldclock:sp('tWorldClock'),shar:()=>tSharParivartan('shar'),kranti:()=>tSharParivartan('kranti'),transit:tTransit,kundali:tKundali,bhav:tBhavphal,ashtaka:tAshtaka,kp:tKP,charts:tCharts,planlat:sp('tAstroLat'),planlon:sp('tAstroLon'),sbc:sp('tSBCsports'),panchak:tPanchak};
+  const fns={match:sp('tMatch'),muhurat:sp('tMuhurat'),numero:sp('tNumero'),numrel:sp('tNumRel'),worldclock:sp('tWorldClock'),shar:()=>tSharParivartan('shar'),kranti:()=>tSharParivartan('kranti'),transit:tTransit,kundali:tKundali,bhav:tBhavphal,ashtaka:tAshtaka,kp:tKP,charts:tCharts,planlat:sp('tAstroLat'),planlon:sp('tAstroLon'),sbc:sp('tSBCsports'),panchak:tPanchak};
   document.getElementById('MAIN').innerHTML=(fns[S.tab]||sp('tMatch'))();
   if(window.sportsAfterRender) window.sportsAfterRender();
   collapsibleInit();
@@ -12659,6 +12659,123 @@ window.tNumero=function(){
     Compatible numbers: <b>${(N.lucky||[]).slice(0,2).join(', ')}</b><br>
     Jersey suggestion: <b style="color:var(--bull)">${(N.lucky||[])[0]??'—'}</b> or any number reducing to it</div>`)}
   </div>`;
+};
+
+// ── TAB: NUMBER RELATIONSHIPS — bonds across numerology systems ────
+// Vedic: planet lordship friendship (uses the engine's natRel table).
+// Chaldean: vibration families 1-2-4-7 · 3-6-9 · 5 (universal) · 8 (karmic).
+// Pythagorean: concords — mental 1-5-7 · business 2-4-8 · creative 3-6-9.
+// Lo Shu: five-element cycle (generating = friend, controlling = enemy).
+const LOSHU_ELEM={1:'Water',2:'Earth',3:'Wood',4:'Wood',5:'Earth',6:'Metal',7:'Metal',8:'Earth',9:'Fire'};
+const ELEM_GEN={Wood:'Fire',Fire:'Earth',Earth:'Metal',Metal:'Water',Water:'Wood'};   // generates →
+const ELEM_CTL={Wood:'Earth',Earth:'Water',Water:'Fire',Fire:'Metal',Metal:'Wood'};   // controls ⊣
+const CHALD_FAM=[[1,2,4,7],[3,6,9],[5],[8]];
+const PYTH_CONCORD=[[1,5,7],[2,4,8],[3,6,9]];
+function relVedic(a,b){
+  const pa=NUM_PLANET[a],pb=NUM_PLANET[b];
+  const r=(typeof natRel==='function')?natRel(pa,pb):'Neutral';
+  const r2=(typeof natRel==='function')?natRel(pb,pa):'Neutral';
+  // mutual view: both friendly → Friend; either enemy → Enemy
+  let rel = (r==='Enemy'||r2==='Enemy')?'Enemy':(r==='Friend'||r==='Own')&&(r2==='Friend'||r2==='Own')?'Friend':(r==='Friend'||r2==='Friend'||r==='Own')?'Friend-ish':'Neutral';
+  return {rel, note:`${pa} sees ${pb}: ${r} · ${pb} sees ${pa}: ${r2}`};
+}
+function relChaldean(a,b){
+  if(a===b) return {rel:'Friend',note:'same vibration'};
+  const fa=CHALD_FAM.findIndex(f=>f.includes(a)), fb=CHALD_FAM.findIndex(f=>f.includes(b));
+  if(a===5||b===5) return {rel:'Friend',note:'5 harmonises with every number'};
+  if(fa===fb) return {rel:'Friend',note:`same vibration family ${CHALD_FAM[fa].join('-')}`};
+  if(a===8||b===8) return {rel:'Enemy',note:'8 (Saturn) is karmic — heavy with outsiders'};
+  if((a===9&&(b===2||b===7))||(b===9&&(a===2||a===7))) return {rel:'Enemy',note:'Mars ↔ Moon/Ketu friction'};
+  return {rel:'Neutral',note:'different families, no direct clash'};
+}
+function relPyth(a,b){
+  const ra=a>9?reduce1(a):a, rb=b>9?reduce1(b):b;
+  if(ra===rb) return {rel:'Friend',note:'identical vibration'};
+  const ca=PYTH_CONCORD.findIndex(c=>c.includes(ra)), cb=PYTH_CONCORD.findIndex(c=>c.includes(rb));
+  if(ca===cb) return {rel:'Friend',note:'same concord '+PYTH_CONCORD[ca].join('-')};
+  if((ra%2)===(rb%2)) return {rel:'Neutral',note:'same parity, different concord'};
+  return {rel:'Neutral',note:'different concords — workable'};
+}
+function relLoShu(a,b){
+  const ea=LOSHU_ELEM[a>9?reduce1(a):a], eb=LOSHU_ELEM[b>9?reduce1(b):b];
+  if(ea===eb) return {rel:'Friend',note:`both ${ea}`};
+  if(ELEM_GEN[ea]===eb) return {rel:'Friend',note:`${ea} generates ${eb}`};
+  if(ELEM_GEN[eb]===ea) return {rel:'Friend',note:`${eb} generates ${ea}`};
+  if(ELEM_CTL[ea]===eb) return {rel:'Enemy',note:`${ea} controls ${eb}`};
+  if(ELEM_CTL[eb]===ea) return {rel:'Enemy',note:`${eb} controls ${ea}`};
+  return {rel:'Neutral',note:`${ea} · ${eb} — no direct cycle link`};
+}
+const REL_SCORE={'Friend':100,'Friend-ish':75,'Neutral':55,'Enemy':15};
+function numBond(a,b){
+  const sys={Vedic:relVedic(a,b),Chaldean:relChaldean(a,b),Pythagorean:relPyth(a,b),LoShu:relLoShu(a,b)};
+  const pct=Math.round(Object.values(sys).reduce((s,x)=>s+(REL_SCORE[x.rel]??55),0)/4);
+  const overall=pct>=75?'FRIEND':pct<=40?'ENEMY':'NEUTRAL';
+  return {a,b,sys,pct,overall};
+}
+const relCol=r=>r==='Friend'||r==='Friend-ish'||r==='FRIEND'?'var(--bull)':r==='Enemy'||r==='ENEMY'?'var(--bear)':'var(--neut)';
+window.tNumRel=function(){
+  const nA=S.nrNameA||S.teamA||'Team A', nB=S.nrNameB||S.teamB||'Team B';
+  const NA=numerologyOf(nA,S.nrDobA), NB=numerologyOf(nB,S.nrDobB);
+  const exprA=pythName(nA), exprB=pythName(nB);
+  // pair rows: label, numA, numB
+  const rows=[];
+  if(NA.birth&&NB.birth)   rows.push(['Mulank A × Mulank B',NA.birth,NB.birth]);
+  if(NA.birth&&NB.destiny) rows.push(['Mulank A × Bhagyank B',NA.birth,NB.destiny]);
+  if(NA.destiny&&NB.birth) rows.push(['Bhagyank A × Mulank B',NA.destiny,NB.birth]);
+  if(NA.destiny&&NB.destiny)rows.push(['Bhagyank A × Bhagyank B',NA.destiny,NB.destiny]);
+  rows.push(['Name (Chaldean) A × B',NA.nameNum,NB.nameNum]);
+  rows.push(['Name (Pythagorean Expression) A × B',reduce1(exprA.num),reduce1(exprB.num)]);
+  if(NA.birth&&NA.nameNum) rows.push(['A internal: Mulank × Name',NA.birth,NA.nameNum]);
+  if(NB.birth&&NB.nameNum) rows.push(['B internal: Mulank × Name',NB.birth,NB.nameNum]);
+  const bonds=rows.map(([lbl,a,b])=>({lbl,...numBond(a,b)}));
+  const avg=bonds.length?Math.round(bonds.reduce((s,x)=>s+x.pct,0)/bonds.length):0;
+  const badge=r=>`<span class="pill" style="background:transparent;border:1px solid ${relCol(r)};color:${relCol(r)};font-weight:700">${r}</span>`;
+  const tableRows=bonds.map(x=>`<tr>
+    <td style="color:var(--tx1);font-weight:700">${x.lbl}</td>
+    <td style="text-align:center;font-family:monospace;font-size:14px"><b style="color:${pc(NUM_PLANET[x.a])}">${x.a}</b> × <b style="color:${pc(NUM_PLANET[x.b])}">${x.b}</b></td>
+    ${['Vedic','Chaldean','Pythagorean','LoShu'].map(k=>`<td style="text-align:center"><span title="${x.sys[k].note}" style="color:${relCol(x.sys[k].rel)};font-weight:700;cursor:help">${x.sys[k].rel}</span></td>`).join('')}
+    <td style="text-align:center"><div style="font-family:monospace;font-weight:800;font-size:15px;color:${relCol(x.overall)}">${x.pct}%</div>
+      <div class="sbar" style="height:4px"><div class="sbar-fill" style="width:${x.pct}%;background:${relCol(x.overall)}"></div></div></td>
+    <td style="text-align:center">${badge(x.overall)}</td></tr>`).join('');
+  // quick number-vs-number tool
+  const qa=parseInt(S.nrQa||'1',10), qb=parseInt(S.nrQb||'4',10);
+  const q=numBond(qa,qb);
+  const qsel=k=>`<select class="ci" style="width:64px" onchange="gs({${k}:this.value})">${[1,2,3,4,5,6,7,8,9].map(n=>`<option ${parseInt(S[k]||(k==='nrQa'?'1':'4'),10)===n?'selected':''}>${n}</option>`).join('')}</select>`;
+  return`
+  <div class="pnl"><div class="ph"><span class="dot"></span>NUMBER RELATIONSHIPS — bonds across Vedic · Chaldean · Pythagorean · Lo Shu</div>
+  <div class="pb"><div class="ctrl-row" style="flex-wrap:wrap;gap:8px">
+    ${inp('ENTITY A NAME','nrNameA',nA)}
+    ${inp('A DOB / FOUNDATION','nrDobA','','date')}
+    ${inp('ENTITY B NAME','nrNameB',nB)}
+    ${inp('B DOB / FOUNDATION','nrDobB','','date')}
+  </div>
+  <div style="font-size:10.5px;color:var(--tx3);margin-top:4px">Defaults to the Match Forecast teams. Mulank = birth-day number · Bhagyank = full-date destiny number · Name numbers from Chaldean &amp; Pythagorean letter values. Hover any verdict for the reasoning.</div>
+  </div></div>
+
+  <div class="pnl" style="border-color:${relCol(avg>=75?'FRIEND':avg<=40?'ENEMY':'NEUTRAL')}55">
+    <div class="ph"><span class="dot" style="background:${relCol(avg>=75?'FRIEND':avg<=40?'ENEMY':'NEUTRAL')}"></span>OVERALL BOND — ${nA} × ${nB}</div>
+    <div class="pb" style="display:flex;gap:26px;align-items:center;flex-wrap:wrap">
+      <div style="font-size:34px;font-weight:800;font-family:monospace;color:${relCol(avg>=75?'FRIEND':avg<=40?'ENEMY':'NEUTRAL')}">${avg}%</div>
+      <div style="flex:1;min-width:220px"><div class="sbar"><div class="sbar-fill" style="width:${avg}%;background:${relCol(avg>=75?'FRIEND':avg<=40?'ENEMY':'NEUTRAL')}"></div></div>
+      <div style="font-size:10.5px;color:var(--tx3);margin-top:4px">average of all pairings below · ≥75% friend · ≤40% enemy</div></div>
+      <div>${badge(avg>=75?'FRIEND':avg<=40?'ENEMY':'NEUTRAL')}</div>
+    </div>
+  </div>
+
+  ${pnl('PAIRWISE BONDS — Mulank · Bhagyank · Name numbers',`
+    <div class="ts"><table class="tbl"><thead><tr><th>Pairing</th><th>Numbers</th><th>Vedic</th><th>Chaldean</th><th>Pythagorean</th><th>Lo Shu</th><th>Bond %</th><th>Verdict</th></tr></thead>
+    <tbody>${tableRows}</tbody></table></div>
+    ${(!NA.birth||!NB.birth)?'<div style="font-size:10.5px;color:var(--neut);margin-top:6px">⚠ Enter both DOB / foundation dates to unlock the Mulank &amp; Bhagyank pairings.</div>':''}`)}
+
+  ${pnl('QUICK LOOKUP — any number × any number',`
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      ${qsel('nrQa')} <span style="color:var(--tx3)">×</span> ${qsel('nrQb')}
+      <span style="font-family:monospace;font-weight:800;font-size:18px;color:${relCol(q.overall)}">${q.pct}%</span> ${badge(q.overall)}
+      <span style="font-size:11px;color:var(--tx2)">${NUM_PLANET[qa]} × ${NUM_PLANET[qb]}</span>
+    </div>
+    <div class="ts"><table class="tbl"><thead><tr><th>System</th><th>Verdict</th><th>Why</th></tr></thead><tbody>
+      ${['Vedic','Chaldean','Pythagorean','LoShu'].map(k=>`<tr><td style="color:var(--tx1);font-weight:700">${k}</td><td style="color:${relCol(q.sys[k].rel)};font-weight:700">${q.sys[k].rel}</td><td style="font-size:11.5px;color:var(--tx2)">${q.sys[k].note}</td></tr>`).join('')}
+    </tbody></table></div>`)}`;
 };
 
 // ── TAB: WORLD CLOCK ───────────────────────────────────────────────
