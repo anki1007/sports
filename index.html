@@ -4230,6 +4230,8 @@ function computeAll(dateStr,timeIST,ayMode){
 }
 
 function mtt(m){let h=Math.floor(m/60),mn=Math.floor(m%60);return`${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}`;}
+// HH:MM:SS from decimal minutes (location-exact rise/set) — handles rollover
+function mtts(m){m=((m%1440)+1440)%1440;let hh=Math.floor(m/60),mm=Math.floor(m%60),ss=Math.round((m-Math.floor(m))*60);if(ss===60){ss=0;mm++;}if(mm===60){mm=0;hh=(hh+1)%24;}return`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;}
 function pc(p){return PC[p]||'var(--tx1)';}
 
 // ── DMS FORMATTING (degree · minute · second) ──────────────────────
@@ -12585,7 +12587,7 @@ window.tMuhurat=function(){
   const rk={t:segT(RAHU_SEG[wd]),sm:rise+(RAHU_SEG[wd]-1)*seg,em:rise+RAHU_SEG[wd]*seg};
   const good=dayCh.filter(c=>c.pol==='good'&&!(c.sm<rk.em&&c.em>rk.sm));
   const chogRow=list=>`<div style="display:flex;flex-wrap:wrap;gap:6px">${list.map(c=>`<span class="pill ${c.pol==='good'?'pb-b':'pb-r'}" style="font-family:monospace">${c.nm} ${c.t}</span>`).join('')}</div>`;
-  return pnl(`MATCH MUHURAT — ${S.date} · ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][wd]} · Sunrise ${mtt(rise)} Sunset ${mtt(set)}`,`
+  return pnl(`MATCH MUHURAT — ${S.date} · ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][wd]} · Sunrise ${mtts(rise)} Sunset ${mtts(set)} · hora & choghadiya reckoned from sunrise`,`
     <table class="tbl" style="width:100%"><tbody>
       <tr><td style="color:var(--bear);font-weight:700">Rahu Kalam</td><td style="font-family:monospace">${segT(RAHU_SEG[wd])}</td><td style="color:var(--tx3)">avoid toss / kickoff / key decisions</td></tr>
       <tr><td style="color:var(--bear)">Yamaganda</td><td style="font-family:monospace">${segT(YAMA_SEG[wd])}</td><td style="color:var(--tx3)">avoid aggressive plays</td></tr>
@@ -12959,7 +12961,7 @@ window.kundaliExtras=function(){
     <span class="pill pb-r">Yamaganda ${segT(YM[wd])}</span>
     <span class="pill pb-r">Gulika Kaal ${segT(GK[wd])}</span>
     <span class="pill pb-b">Abhijit ${mtt(noon-abhi)}–${mtt(noon+abhi)}</span>
-    <span class="pill pb-n">Sunrise ${mtt(rise)}</span><span class="pill pb-n">Sunset ${mtt(set)}</span>
+    <span class="pill pb-n">Sunrise ${mtts(rise)}</span><span class="pill pb-n">Sunset ${mtts(set)}</span>
   </div>`;
   // ── Upagrahas ──
   const up=computeUpagrahas();
@@ -13165,7 +13167,7 @@ window.tWorldClock=function(){
     const t0=new Date(Date.parse(S.date+'T00:00:00Z')-IST*3600e3);
     const r=A.SearchRiseSet(A.Body?A.Body.Moon:'Moon',obs,+1,t0,1);
     const s=A.SearchRiseSet(A.Body?A.Body.Moon:'Moon',obs,-1,t0,1);
-    const loc=t=>{const d=new Date(t.date.getTime()+IST*3600e3);return`${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;};
+    const loc=t=>{const d=new Date(t.date.getTime()+IST*3600e3);return`${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}:${String(d.getUTCSeconds()).padStart(2,'0')}`;};
     if(r)mr=loc(r); if(s)ms=loc(s);
   }catch(e){}
   const lst=lstHours(), lh=Math.floor(lst), lm=Math.floor((lst-lh)*60), lsc=Math.floor((((lst-lh)*60)-lm)*60);
@@ -13174,9 +13176,9 @@ window.tWorldClock=function(){
     `<table class="tbl" style="width:100%"><thead><tr><th>ZONE</th><th>IANA</th><th>NOW</th><th>OFFSET</th><th style="text-align:center">DST</th><th></th></tr></thead><tbody>${rows}</tbody></table>${zonePicker}`)+
   pnl('VENUE ASTRONOMICAL CLOCK (at selected date/time)',`
     <div style="display:flex;gap:26px;flex-wrap:wrap;font-size:12.5px;color:var(--tx1);line-height:2.2">
-      <span>☀ Sunrise <b style="color:var(--acc)">${mtt(D.rMin)}</b></span>
-      <span>☀ Sunset <b style="color:var(--acc)">${mtt(D.sMin)}</b></span>
-      <span>◐ Solar noon <b style="color:var(--acc)">${mtt((D.rMin+D.sMin)/2)}</b></span>
+      <span>☀ Sunrise <b style="color:var(--acc)">${mtts(D.rMin)}</b></span>
+      <span>☀ Sunset <b style="color:var(--acc)">${mtts(D.sMin)}</b></span>
+      <span>◐ Solar noon <b style="color:var(--acc)">${mtts((D.rMin+D.sMin)/2)}</b></span>
       <span>☾ Moonrise <b style="color:var(--moon)">${mr}</b></span>
       <span>☾ Moonset <b style="color:var(--moon)">${ms}</b></span>
       <span>✦ Sidereal time <b style="color:var(--acc)">${String(lh).padStart(2,'0')}:${String(lm).padStart(2,'0')}:${String(lsc).padStart(2,'0')}</b></span>
@@ -13214,38 +13216,48 @@ function chironGeo(J){
 const AL_BODIES=['Moon','Mercury','Venus','Mars','Jupiter','Saturn','Rahu','Uranus','Neptune','Pluto','Chiron'];
 // View state: t0/t1 = window edges in days relative to the selected date.
 window.ALV=window.ALV||{t0:-60,t1:120};
+function alApply(){ if(document.getElementById('alSVG')&&window.alRedraw){ window.alRedraw(); } else { gs({_alTick:(S._alTick||0)+1}); } }
 window.alReset=function(){
   const span=parseInt(S.alRange||'180',10);
   window.ALV={t0:-Math.round(span/3), t1:Math.round(span*2/3)};
-  gs({_alTick:(S._alTick||0)+1});
+  alApply();
 };
 window.alZoom=function(f,cx){ // f<1 zoom in, f>1 zoom out; cx = anchor fraction 0..1 (default centre)
   const v=window.ALV, w=v.t1-v.t0, frac=cx==null?0.5:cx, c=v.t0+w*frac;
-  const nw=Math.max(7,Math.min(2400,w*f));
+  const nw=Math.max(7,Math.min(7300,w*f));   // up to ~20y wide
   window.ALV={t0:c-nw*frac, t1:c+nw*(1-frac)};
-  gs({_alTick:(S._alTick||0)+1});
+  alApply();
 };
 window.alPan=function(frac){
   const v=window.ALV, d=(v.t1-v.t0)*frac;
   window.ALV={t0:v.t0+d,t1:v.t1+d};
-  gs({_alTick:(S._alTick||0)+1});
+  alApply();
 };
+const COMBUST_ORB={Mercury:12,Venus:8,Mars:17,Jupiter:11,Saturn:15,Moon:12,Uranus:15,Neptune:15,Pluto:15};
 function alSeries(mode){
   const dp=dobParts(S.date)||{y:2026,mo:1,dy:1};
   const J0=JD(dp.y,dp.mo,dp.dy,12);
   const v=window.ALV, span=v.t1-v.t0;
-  const step=Math.max(span/240, span>200?2:(span<20?0.125:1));
+  const step=Math.max(span/300, span>200?2:(span<20?0.125:1));
   const bodies=(S.alBodies!=null?S.alBodies.split(',').filter(Boolean):['Moon','Mercury','Venus','Mars']).filter(b=>AL_BODIES.includes(b));
   const out={};
   for(const b of bodies){
-    const pts=[];
+    const pts=[]; let prevLonT=null;
     for(let d=v.t0;d<=v.t1+1e-9;d+=step){
       const J=J0+d;
-      let val;
-      if(b==='Chiron'){ const c=chironGeo(J); val = mode==='lat'?c.lat:n360(c.lon-getAyanamsa(J,S.ayMode)); }
-      else val = mode==='lat'?geoLat(b,J):n360(geoLon(b,J)-getAyanamsa(J,S.ayMode));
-      pts.push({d, v:val});
+      let lonT, val;
+      if(b==='Chiron'){ const c=chironGeo(J); lonT=c.lon; val = mode==='lat'?c.lat:n360(c.lon-getAyanamsa(J,S.ayMode)); }
+      else { lonT=n360(geoLon(b,J)); val = mode==='lat'?geoLat(b,J):n360(lonT-getAyanamsa(J,S.ayMode)); }
+      // retrograde from unwrapped longitude delta
+      let retro=false;
+      if(prevLonT!==null){ let dl=((lonT-prevLonT+540)%360)-180; retro=dl<0; }
+      prevLonT=lonT;
+      // combustion (non-luminary within its orb of the Sun); skip Sun/Rahu/Ketu/Chiron
+      let combust=false;
+      if(COMBUST_ORB[b]!==undefined){ const sunT=n360(geoLon('Sun',J)); combust=foldDeg(lonT-sunT)<COMBUST_ORB[b]; }
+      pts.push({d, v:val, retro, combust});
     }
+    if(pts.length>1) pts[0].retro=pts[1].retro;
     out[b]=pts;
   }
   return {bodies,out,t0:v.t0,t1:v.t1,span,step};
@@ -13259,27 +13271,49 @@ function alChart(mode){
     let m=0; bodies.forEach(b=>out[b].forEach(p=>{m=Math.max(m,Math.abs(p.v));}));
     m=Math.max(1,Math.ceil(m)); ymin=-m; ymax=m;
   } else { ymin=0; ymax=360; }
-  const X=d=>L+((d+back)/span)*pw, Y=v=>T+(1-(v-ymin)/(ymax-ymin))*ph;
-  const paths=bodies.map(b=>{
-    let dstr='',prev=null;
-    for(const p of out[b]){
-      const brk=mode==='lon'&&prev!==null&&Math.abs(p.v-prev)>180;
-      dstr+=(dstr===''||brk?'M':'L')+X(p.d).toFixed(1)+' '+Y(p.v).toFixed(1)+' ';
-      prev=p.v;
-    }
-    return`<path d="${dstr}" fill="none" stroke="${({Sun:'#ffb300',Moon:'#90caf9',Mercury:'#66bb6a',Venus:'#f48fb1',Mars:'#ef5350',Jupiter:'#ffa726',Saturn:'#78909c',Rahu:'#ab47bc',Uranus:'#4dd0e1',Neptune:'#7986cb',Pluto:'#b08968',Chiron:'#5fbf9f'})[b]||'#888'}" stroke-width="1.6"/>`;
-  }).join('');
+  const clamp=y=>Math.max(T,Math.min(H-B,y));
+  const X=d=>L+((d+back)/span)*pw, Y=v=>clamp(T+(1-(v-ymin)/(ymax-ymin))*ph);
+  const COL={Sun:'#ffb300',Moon:'#90caf9',Mercury:'#66bb6a',Venus:'#f48fb1',Mars:'#ef5350',Jupiter:'#ffa726',Saturn:'#78909c',Rahu:'#ab47bc',Uranus:'#4dd0e1',Neptune:'#7986cb',Pluto:'#b08968',Chiron:'#5fbf9f'};
+  let paths='', markers='';
+  bodies.forEach(b=>{
+    const col=COL[b]||'#888', pts=out[b];
+    // split into segments by retro-state change or 360→0 wrap; dashed if retro
+    let seg=[], segRetro=pts[0]?pts[0].retro:false;
+    const flush=()=>{ if(seg.length){ paths+=`<path d="M${seg.join(' L')}" fill="none" stroke="${col}" stroke-width="1.6"${segRetro?' stroke-dasharray="5 3" opacity="0.9"':''}/>`; seg=[]; } };
+    let prevV=null;
+    pts.forEach((p,i)=>{
+      const brk=mode==='lon'&&prevV!==null&&Math.abs(p.v-prevV)>180;
+      if((p.retro!==segRetro)||brk){ flush(); segRetro=p.retro; }
+      seg.push(X(p.d).toFixed(1)+' '+Y(p.v).toFixed(1));
+      // station marker where retro flips (skip wrap artefacts)
+      if(i>0 && p.retro!==pts[i-1].retro && !brk){
+        markers+=`<circle cx="${X(p.d).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="3" fill="${col}" stroke="var(--bg1)" stroke-width="0.8"/><text x="${(X(p.d)+4).toFixed(1)}" y="${(Y(p.v)+3).toFixed(1)}" font-size="9" font-weight="700" fill="${col}">${p.retro?'℞':'D'}</text>`;
+      }
+      // combust marker on rising edge
+      if(p.combust && (i===0||!pts[i-1].combust)){
+        markers+=`<circle cx="${X(p.d).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="3.4" fill="none" stroke="#ff9800" stroke-width="1.3"/>`;
+      }
+      prevV=p.v;
+    });
+    flush();
+  });
   const gridY=mode==='lat'
     ? [...Array(2*Math.abs(ymax)+1)].map((_,i)=>ymin+i).filter(v=>Number.isInteger(v))
-    : [0,60,120,180,240,300,360];
+    : [0,30,60,90,120,150,180,210,240,270,300,330,360];
   const grid=gridY.map(v=>`<line x1="${L}" y1="${Y(v)}" x2="${W-R}" y2="${Y(v)}" stroke="var(--bd)" stroke-width="${v===0&&mode==='lat'?1.4:0.5}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--tx3)">${v}°</text>`).join('');
-  const months=[]; for(let d=-back;d<=span-back;d+=Math.max(1,Math.round(span/12))){
+  const months=[]; const mstep=Math.max(1,Math.round(span/12));
+  for(let d=Math.ceil(-back);d<=span-back;d+=mstep){
     const dt=new Date(S.date+'T12:00:00'); dt.setDate(dt.getDate()+d);
-    months.push(`<line x1="${X(d)}" y1="${T}" x2="${X(d)}" y2="${H-B}" stroke="var(--bd)" stroke-width="0.4"/><text x="${X(d)}" y="${H-10}" text-anchor="middle" font-size="9.5" fill="var(--tx3)">${dt.getDate()}/${dt.getMonth()+1}</text>`);}
-  const todayX=X(0);
-  return`<svg id="alSVG" viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--bg1);border:1px solid var(--bd);border-radius:4px;cursor:grab;touch-action:none;user-select:none">${grid}${months.join('')}
-    <line x1="${todayX}" y1="${T}" x2="${todayX}" y2="${H-B}" stroke="var(--acc)" stroke-dasharray="4 3" stroke-width="1.2"/>
-    <text x="${todayX+4}" y="${T+12}" font-size="10" fill="var(--acc)">${S.date}</text>${paths}</svg>`;
+    const lbl = span>1500 ? `${dt.getMonth()+1}/${String(dt.getFullYear()).slice(2)}` : `${dt.getDate()}/${dt.getMonth()+1}`;
+    months.push(`<line x1="${X(d)}" y1="${T}" x2="${X(d)}" y2="${H-B}" stroke="var(--bd)" stroke-width="0.4"/><text x="${X(d)}" y="${H-10}" text-anchor="middle" font-size="9.5" fill="var(--tx3)">${lbl}</text>`);}
+  const todayX=X(0), showToday=todayX>=L&&todayX<=W-R;
+  return`<svg id="alSVG" viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--bg1);border:1px solid var(--bd);border-radius:4px;cursor:grab;touch-action:none;user-select:none">
+    <defs><clipPath id="alClip"><rect x="${L}" y="${T}" width="${pw}" height="${ph}"/></clipPath></defs>
+    <rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="var(--bd2)" stroke-width="0.8"/>
+    <g clip-path="url(#alClip)">${grid}${months.join('')}
+    ${showToday?`<line x1="${todayX}" y1="${T}" x2="${todayX}" y2="${H-B}" stroke="var(--acc)" stroke-dasharray="4 3" stroke-width="1.2"/>`:''}
+    ${paths}${markers}</g>
+    ${showToday?`<text x="${Math.min(todayX+4,W-70)}" y="${T+12}" font-size="10" fill="var(--acc)">${S.date}</text>`:''}</svg>`;
 }
 window.alToggleBody=function(b,on){
   const cur=S.alBodies!=null?S.alBodies.split(',').filter(Boolean):['Moon','Mercury','Venus','Mars'];
@@ -13304,25 +13338,55 @@ function alTab(mode){
       </div>
     </div>
   </div>`;
+  window.alMode=mode;
+  const center=Math.round((v.t0+v.t1)/2);
+  const yrOff=(center/365.25).toFixed(1);
   return pnl(mode==='lat'
       ? 'PLANET ECLIPTIC LATITUDE (SHAR) — N/S of the ecliptic · zero-crossing = Shar Parivartan (strongest day-energy signal)'
       : 'PLANET SIDEREAL LONGITUDE — 0–360° through the zodiac (breaks at 360→0 wrap)',`
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
       <span class="cl">PLANETS</span>${dd}
-      <span class="cl" style="margin-left:10px">WINDOW</span>${rbtn(90,'90d')}${rbtn(180,'180d')}${rbtn(365,'1Y')}
+      <span class="cl" style="margin-left:10px">WINDOW</span>${rbtn(90,'90d')}${rbtn(180,'180d')}${rbtn(365,'1Y')}${rbtn(1825,'5Y')}${rbtn(3650,'10Y')}
       <span class="cl" style="margin-left:10px">VIEW</span>
       ${tbtn('alZoom(0.6)','＋','Zoom in')}
       ${tbtn('alZoom(1.6667)','－','Zoom out')}
       ${tbtn('alPan(-0.25)','◀','Pan left')}
       ${tbtn('alPan(0.25)','▶','Pan right')}
       ${tbtn('alReset()','⟲ Reset','Reset view')}
-      <span style="font-size:10.5px;color:var(--tx3)">showing ${span}d · drag to pan · wheel to zoom</span>
+      <span id="alShowing" style="font-size:10.5px;color:var(--tx3)">showing ${span}d</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+      <span class="cl" style="white-space:nowrap">TIMELINE (−10y ↔ +10y)</span>
+      <input id="alSlider" type="range" min="-3650" max="3650" step="5" value="${center}" oninput="alSlideTo(this.value)" style="flex:1;min-width:200px;accent-color:var(--acc)">
+      <span id="alCenterLbl" style="font-size:10.5px;color:var(--acc);font-family:monospace;white-space:nowrap;min-width:90px;text-align:right">${yrOff>=0?'+':''}${yrOff}y from ${S.date}</span>
     </div>
     ${bodies.length?alChart(mode):'<div style="padding:30px;color:var(--tx3)">Select at least one planet from the dropdown.</div>'}
-    <div style="font-size:10.5px;color:var(--tx3);margin-top:6px">Computed live from the inlined VSOP87/ELP astronomy engine at the selected venue &amp; ayanamsa. Dashed line = selected date.</div>`);
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--tx3);margin-top:6px">
+      <span>— solid = direct motion</span><span>– – dashed = <b style="color:var(--tx2)">retrograde</b></span>
+      <span>● <b style="color:var(--tx2)">station</b> (℞ turns retro · D turns direct)</span>
+      <span>◦ <span style="color:#ff9800">combust</span> (near Sun)</span>
+      <span style="margin-left:auto">Live VSOP87/ELP at the selected venue &amp; ayanamsa · drag chart to pan · wheel to zoom · dashed vertical = ${S.date}</span>
+    </div>`);
 }
-// wheel-zoom + drag-pan wiring (re-attached after every render)
-function alWire(){
+// Slider → recenter window keeping span; lightweight SVG-only redraw
+window.alSlideTo=function(val){
+  const c=+val, half=(window.ALV.t1-window.ALV.t0)/2;
+  window.ALV={t0:c-half,t1:c+half};
+  window.alRedraw();
+  const lbl=document.getElementById('alCenterLbl'); if(lbl){const y=(c/365.25).toFixed(1);lbl.textContent=(y>=0?'+':'')+y+'y from '+S.date;}
+};
+window.alRedraw=function(){
+  const svg=document.getElementById('alSVG'); if(!svg||!window.alMode) return;
+  const wrap=document.createElement('div'); wrap.innerHTML=alChart(window.alMode);
+  svg.replaceWith(wrap.firstElementChild);
+  const sh=document.getElementById('alShowing'); if(sh) sh.textContent='showing '+Math.round(window.ALV.t1-window.ALV.t0)+'d';
+  const c=Math.round((window.ALV.t0+window.ALV.t1)/2);
+  const sl=document.getElementById('alSlider'); if(sl&&document.activeElement!==sl) sl.value=String(c);
+  const cl=document.getElementById('alCenterLbl'); if(cl){const y=(c/365.25).toFixed(1);cl.textContent=(y>=0?'+':'')+y+'y from '+S.date;}
+  alWireSVG();
+};
+// wheel-zoom + drag-pan wiring — re-attached after every SVG redraw
+function alWireSVG(){
   const svg=document.getElementById('alSVG'); if(!svg||svg.dataset.wired) return;
   svg.dataset.wired='1';
   const frac=e=>{const r=svg.getBoundingClientRect();return Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));};
@@ -13334,12 +13398,13 @@ function alWire(){
     const r=svg.getBoundingClientRect(), w=drag.v.t1-drag.v.t0;
     const dd=-(e.clientX-drag.x)/r.width*w;
     window.ALV={t0:drag.v.t0+dd,t1:drag.v.t1+dd};
-    if(!window._alRAF){window._alRAF=requestAnimationFrame(()=>{window._alRAF=null;gs({_alTick:(S._alTick||0)+1});});}
+    if(!window._alRAF){window._alRAF=requestAnimationFrame(()=>{window._alRAF=null;window.alRedraw();});}
   });
   const up=e=>{if(drag){drag=null;svg.style.cursor='grab';}};
   svg.addEventListener('pointerup',up); svg.addEventListener('pointercancel',up);
   svg.addEventListener('dblclick',()=>alReset());
 }
+function alWire(){ alWireSVG(); }
 window.tAstroLat=()=>alTab('lat');
 window.tAstroLon=()=>alTab('lon');
 
