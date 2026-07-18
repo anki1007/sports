@@ -656,12 +656,13 @@ function getAyanamsa(J,mode){
     case 'kp':     return kpAyanamsa(J);
     case 'kpold':  return kpOldAyanamsa(J);
     case 'raman':  return ramanAyanamsa(J);
+    case 'sayana': return 0;                 // Sayana = tropical, no ayanamsa
     default:       return lahiriAyanamsa(J);
   }
 }
 function ayanamsaLabel(mode){
   return {lahiri:'Lahiri (Chitrapaksha)', kp:'KP New (Krishnamurti)',
-          kpold:'KP Old', raman:'Raman'}[mode] || 'Lahiri';
+          kpold:'KP Old', raman:'Raman', sayana:'Sayana (Tropical)'}[mode] || 'Lahiri';
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -4414,6 +4415,7 @@ function rHdr(){
           <option value="kp" ${S.ayMode==='kp'?'selected':''}>KP New (KSK)</option>
           <option value="kpold" ${S.ayMode==='kpold'?'selected':''}>KP Old</option>
           <option value="raman" ${S.ayMode==='raman'?'selected':''}>Raman</option>
+          <option value="sayana" ${S.ayMode==='sayana'?'selected':''}>Sayana (Tropical)</option>
         </select>
       </div>
       <div class="cg"><span class="cl">LAT °N</span><input type="text" id="iLA" value="${LAT.toFixed(4)}" class="ci w80"></div>
