@@ -13302,15 +13302,32 @@ function alChart(mode){
     : [0,30,60,90,120,150,180,210,240,270,300,330,360];
   const grid=gridY.map(v=>`<line x1="${L}" y1="${Y(v)}" x2="${W-R}" y2="${Y(v)}" stroke="var(--bd)" stroke-width="${v===0&&mode==='lat'?1.4:0.5}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--tx3)">${v}°</text>`).join('');
   const months=[]; const mstep=Math.max(1,Math.round(span/12));
+  const MON3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   for(let d=Math.ceil(-back);d<=span-back;d+=mstep){
     const dt=new Date(S.date+'T12:00:00'); dt.setDate(dt.getDate()+d);
-    const lbl = span>1500 ? `${dt.getMonth()+1}/${String(dt.getFullYear()).slice(2)}` : `${dt.getDate()}/${dt.getMonth()+1}`;
+    const lbl = span>1500 ? `${MON3[dt.getMonth()]} '${String(dt.getFullYear()).slice(2)}`
+              : span>320  ? `${dt.getDate()}/${dt.getMonth()+1}/${String(dt.getFullYear()).slice(2)}`
+              :             `${dt.getDate()}/${dt.getMonth()+1}`;
     months.push(`<line x1="${X(d)}" y1="${T}" x2="${X(d)}" y2="${H-B}" stroke="var(--bd)" stroke-width="0.4"/><text x="${X(d)}" y="${H-10}" text-anchor="middle" font-size="9.5" fill="var(--tx3)">${lbl}</text>`);}
+  // ── Year-boundary markers: labeled vertical line at each Jan 1 in view ──
+  const yearBands=[];
+  const startDt=new Date(S.date+'T12:00:00'); startDt.setDate(startDt.getDate()+Math.ceil(-back));
+  const endDt=new Date(S.date+'T12:00:00'); endDt.setDate(endDt.getDate()+(span-back));
+  const dayMs=86400000, baseDt=new Date(S.date+'T12:00:00');
+  for(let yr=startDt.getFullYear(); yr<=endDt.getFullYear(); yr++){
+    const jan1=new Date(yr,0,1,12,0,0);
+    const dOff=Math.round((jan1-baseDt)/dayMs);
+    if(dOff< -back-0.5 || dOff> span-back+0.5) continue;
+    const x=X(dOff);
+    yearBands.push(`<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${H-B}" stroke="var(--acc)" stroke-width="0.8" stroke-dasharray="2 4" opacity="0.55"/><text x="${(x+3).toFixed(1)}" y="${T+11}" font-size="11" font-weight="700" fill="var(--acc)" opacity="0.85">${yr}</text>`);
+  }
+  // If no Jan 1 falls in view (narrow window inside one year), label that year top-left
+  if(!yearBands.length){ yearBands.push(`<text x="${(L+4)}" y="${T+11}" font-size="11" font-weight="700" fill="var(--acc)" opacity="0.85">${startDt.getFullYear()}${startDt.getFullYear()!==endDt.getFullYear()?'–'+endDt.getFullYear():''}</text>`); }
   const todayX=X(0), showToday=todayX>=L&&todayX<=W-R;
   return`<svg id="alSVG" viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--bg1);border:1px solid var(--bd);border-radius:4px;cursor:grab;touch-action:none;user-select:none">
     <defs><clipPath id="alClip"><rect x="${L}" y="${T}" width="${pw}" height="${ph}"/></clipPath></defs>
     <rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="var(--bd2)" stroke-width="0.8"/>
-    <g clip-path="url(#alClip)">${grid}${months.join('')}
+    <g clip-path="url(#alClip)">${grid}${months.join('')}${yearBands.join('')}
     ${showToday?`<line x1="${todayX}" y1="${T}" x2="${todayX}" y2="${H-B}" stroke="var(--acc)" stroke-dasharray="4 3" stroke-width="1.2"/>`:''}
     ${paths}${markers}</g>
     ${showToday?`<text x="${Math.min(todayX+4,W-70)}" y="${T+12}" font-size="10" fill="var(--acc)">${S.date}</text>`:''}</svg>`;
