@@ -612,8 +612,8 @@ const DO_SEQ=['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Merc
 const DY={Ketu:7,Venus:20,Sun:6,Moon:10,Mars:7,Rahu:18,Jupiter:16,Saturn:19,Mercury:17};
 const CHALD=['Sun','Venus','Mercury','Moon','Saturn','Jupiter','Mars'];
 const DAY_LORDS=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
-const PC={Sun:'var(--sun)',Moon:'var(--moon)',Mars:'var(--mars)',Mercury:'var(--merc)',Jupiter:'var(--jupi)',Venus:'var(--venu)',Saturn:'var(--satn)',Rahu:'var(--rahu)',Ketu:'var(--ketu)',Uranus:'var(--uran)',Neptune:'var(--nept)'};
-const PA={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke',Uranus:'Ur',Neptune:'Ne'};
+const PC={Sun:'var(--sun)',Moon:'var(--moon)',Mars:'var(--mars)',Mercury:'var(--merc)',Jupiter:'var(--jupi)',Venus:'var(--venu)',Saturn:'var(--satn)',Rahu:'var(--rahu)',Ketu:'var(--ketu)',Uranus:'var(--uran)',Neptune:'var(--nept)',Pluto:'#b08968',Chiron:'#5fbf9f'};
+const PA={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke',Uranus:'Ur',Neptune:'Ne',Pluto:'Pl',Chiron:'Ch'};
 const DEG=Math.PI/180;
 
 // ── MATH HELPERS ───────────────────────────────────────────────────
@@ -997,7 +997,7 @@ const PLANET_NATURE = {
   Jupiter:{pol:+1, mag:1.1}, Venus:{pol:+1, mag:0.8},
   Saturn:{pol:-1, mag:1.0},
   Rahu:{pol:-1, mag:0.7}, Ketu:{pol:-1, mag:0.7},
-  Uranus:{pol:0, mag:0.4}, Neptune:{pol:0, mag:0.4},
+  Uranus:{pol:0, mag:0.4}, Neptune:{pol:0, mag:0.4}, Pluto:{pol:-1, mag:0.4},
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -3193,7 +3193,7 @@ function computeNatal(ayMode){
   const ay=getAyanamsa(J,ayMode);
   const trop={Sun:geoLon('Sun',J),Moon:geoLon('Moon',J),Mars:geoLon('Mars',J),
     Mercury:geoLon('Mercury',J),Jupiter:geoLon('Jupiter',J),Venus:geoLon('Venus',J),
-    Saturn:geoLon('Saturn',J),Rahu:rahuLon(J),Uranus:geoLon('Uranus',J),Neptune:geoLon('Neptune',J)};
+    Saturn:geoLon('Saturn',J),Rahu:rahuLon(J),Uranus:geoLon('Uranus',J),Neptune:geoLon('Neptune',J),Pluto:geoLon('Pluto',J)};
   trop.Ketu=n360(trop.Rahu+180);
   const ascObj=computeAsc(J);
   const ascSid=n360(ascObj.asc-ay);
@@ -3384,7 +3384,8 @@ function build5minSlots(dateStr, ayMode){
     const lagChange = prevLag!==null && lag.s!==prevLag;
     const nakChange = prevNak!==null && mnk.n!==prevNak;
     slots.push({ min, time:mtt(min), lagSign:lag.sign, lagS:lag.s, lagDeg:lag.deg,
-                 moonSign:getSign(ml).sign, moonNak:mnk.n, moonSub:msb.sub, moonPada:mnk.pada,
+                 moonSign:getSign(ml).sign, moonDeg:ml%30, moonNak:mnk.n, nakPos:mnk.pos,
+                 moonSub:msb.sub, moonSS:msb.ss, moonPada:mnk.pada,
                  lagChange, nakChange });
     prevLag=lag.s; prevNak=mnk.n;
   }
@@ -3397,7 +3398,7 @@ function computeMomentChart(dateStr, timeIST, ayMode){
   const ay=getAyanamsa(J,ayMode);
   const trop={Sun:geoLon('Sun',J),Moon:geoLon('Moon',J),Mars:geoLon('Mars',J),
     Mercury:geoLon('Mercury',J),Jupiter:geoLon('Jupiter',J),Venus:geoLon('Venus',J),
-    Saturn:geoLon('Saturn',J),Rahu:rahuLon(J),Uranus:geoLon('Uranus',J),Neptune:geoLon('Neptune',J)};
+    Saturn:geoLon('Saturn',J),Rahu:rahuLon(J),Uranus:geoLon('Uranus',J),Neptune:geoLon('Neptune',J),Pluto:geoLon('Pluto',J)};
   trop.Ketu=n360(trop.Rahu+180);
   const ascSid=n360(computeAsc(J).asc-ay);
   const lagS=Math.floor(ascSid/30);
@@ -4075,7 +4076,8 @@ function computeAll(dateStr,timeIST,ayMode){
     Saturn: geoLon('Saturn',J),
     Rahu:   rahuLon(J),
     Uranus: geoLon('Uranus',J),
-    Neptune:geoLon('Neptune',J)
+    Neptune:geoLon('Neptune',J),
+    Pluto:  geoLon('Pluto',J)
   };
   trop.Ketu=n360(trop.Rahu+180);
 
@@ -4089,6 +4091,7 @@ function computeAll(dateStr,timeIST,ayMode){
     Saturn:  isRetrograde('Saturn',J),
     Uranus:  isRetrograde('Uranus',J),
     Neptune: isRetrograde('Neptune',J),
+    Pluto:   isRetrograde('Pluto',J),
     Rahu:true, Ketu:true
   };
 
@@ -4508,7 +4511,7 @@ window.V44_FALLBACK_FC=[{"date":"2026-06-08","wd":"Mon","net":-1.5,"dir":-1,"ban
     var dp=dateStr.split('-').map(Number);
     var J=JD(dp[0],dp[1],dp[2],timeIST);
     var ay=getAyanamsa(J,ayMode);
-    var trop={Sun:geoLon('Sun',J),Moon:geoLon('Moon',J),Mars:geoLon('Mars',J),Mercury:geoLon('Mercury',J),Jupiter:geoLon('Jupiter',J),Venus:geoLon('Venus',J),Saturn:geoLon('Saturn',J),Rahu:rahuLon(J),Uranus:geoLon('Uranus',J),Neptune:geoLon('Neptune',J)};
+    var trop={Sun:geoLon('Sun',J),Moon:geoLon('Moon',J),Mars:geoLon('Mars',J),Mercury:geoLon('Mercury',J),Jupiter:geoLon('Jupiter',J),Venus:geoLon('Venus',J),Saturn:geoLon('Saturn',J),Rahu:rahuLon(J),Uranus:geoLon('Uranus',J),Neptune:geoLon('Neptune',J),Pluto:geoLon('Pluto',J)};
     trop.Ketu=n360(trop.Rahu+180);
     var retro={Sun:false,Moon:false,Mars:isRetrograde('Mars',J),Mercury:isRetrograde('Mercury',J),Jupiter:isRetrograde('Jupiter',J),Venus:isRetrograde('Venus',J),Saturn:isRetrograde('Saturn',J),Uranus:isRetrograde('Uranus',J),Neptune:isRetrograde('Neptune',J),Rahu:true,Ketu:true};
     var ascObj=computeAsc(J); var ascSid=n360(ascObj.asc-ay);
@@ -10558,14 +10561,30 @@ function tKundali(){
   const natalRows = nat.planets.map(p=>`<tr><td style="color:${PC[p.name]};font-weight:700">${p.abbr} ${p.name}</td><td>${p.sign} ${dmsC(p.deg)}</td><td>H${p.h}</td><td>${p.nak}</td><td>${p.retro?'<span style="color:var(--bear)">℞</span>':''}</td></tr>`).join('');
   const tr = (D.natalTransit&&D.natalTransit.hits||[]).map(h=>`<tr><td style="color:${PC[h.planet]};font-weight:700">${h.planet}</td><td>natal H${h.house} ${BULL_HOUSES.has(h.house)?'<span style="color:var(--bull)">(bull)</span>':BEAR_HOUSES.has(h.house)?'<span style="color:var(--bear)">(bear)</span>':''}</td><td style="font-weight:700;color:${h.s>0?'var(--bull)':'var(--bear)'}">${h.s>0?'+':''}${h.s}</td><td style="font-size:11.5px;color:var(--tx2)">${h.note}</td></tr>`).join('');
   const slots=D.slots5||[];
+  const PADA_INFO={1:['Fire','Dharma','Aries·Leo·Sag'],2:['Earth','Artha','Tau·Vir·Cap'],3:['Air','Kama','Gem·Lib·Aqu'],4:['Water','Moksha','Can·Sco·Pis']};
+  const PADA_COL={1:'#ff7043',2:'#a1887f',3:'#80deea',4:'#64b5f6'};
   const slotRows = slots.map(s=>{
     const hl=Math.abs((parseFloat(t5)*60)-s.min)<3;
+    const pi=PADA_INFO[s.moonPada]||['?','?'];
     return`<tr class="${s.lagChange||s.nakChange?'tr-hl':''}${hl?' tr-b':''}">
       <td style="font-family:monospace;font-weight:700;color:${hl?'var(--acc)':'var(--tx1)'}">${s.time}${hl?' ◄':''}</td>
       <td style="color:${s.lagChange?'var(--neut)':'var(--tx1)'};font-weight:${s.lagChange?'700':'400'}">${s.lagSign}${s.lagChange?' ⟲':''}</td>
-      <td>${s.moonSign}</td><td style="color:var(--tx2)">${s.moonNak}${s.nakChange?' <span style="color:var(--neut)">⟲</span>':''}</td>
-      <td style="color:${PC[s.moonSub]}">${s.moonSub}</td><td>${s.moonPada}</td></tr>`;
+      <td style="font-family:monospace;color:var(--tx2)">${dmsC(s.lagDeg)}</td>
+      <td>${s.moonSign}</td>
+      <td style="font-family:monospace;color:var(--tx2)">${dmsC(s.moonDeg!=null?s.moonDeg:0)}</td>
+      <td style="color:var(--tx2)">${s.moonNak}${s.nakChange?' <span style="color:var(--neut)">⟲</span>':''}</td>
+      <td style="font-family:monospace;color:var(--tx3)">${s.nakPos!=null?dmsC(s.nakPos):'—'}</td>
+      <td style="color:${PC[s.moonSub]};font-weight:700">${s.moonSub}</td>
+      <td style="color:${PC[s.moonSS]||'var(--tx2)'}">${s.moonSS||'—'}</td>
+      <td><b style="color:${PADA_COL[s.moonPada]}">P${s.moonPada}</b> <span style="font-size:10px;color:var(--tx3)">${pi[0]}·${pi[1]}</span></td></tr>`;
   }).join('');
+  const padaLegend=`<div style="padding:8px 12px;font-size:11px;color:var(--tx2);line-height:1.7;border-top:1px dashed var(--bd)">
+    <b style="color:var(--acc)">NAKSHATRA PADAS (Navamsa quarters, 3°20' each):</b><br>
+    <b style="color:#ff7043">Pada 1 — Fire / Dharma</b> (navamsa in Aries·Leo·Sagittarius): creation, initiation, action — purpose, duty &amp; righteousness.<br>
+    <b style="color:#a1887f">Pada 2 — Earth / Artha</b> (Taurus·Virgo·Capricorn): sustenance, stability, material manifestation — wealth, career &amp; security.<br>
+    <b style="color:#80deea">Pada 3 — Air / Kama</b> (Gemini·Libra·Aquarius): intellect, communication, networking — desire, pleasure &amp; relationships.<br>
+    <b style="color:#64b5f6">Pada 4 — Water / Moksha</b> (Cancer·Scorpio·Pisces): emotion, intuition, spiritual completion — liberation &amp; inner peace.
+  </div>`;
   return`
 <div style="display:flex;flex-direction:column;gap:10px">
   <div class="g2">
@@ -10600,8 +10619,11 @@ function tKundali(){
     </div>
   </div>
   <div class="pnl"><div class="ph"><span class="dot"></span>⏱ 5-MIN LAGNA / MOON TRANSITIONS · ${mtt(SRk.startMin)}→${mtt(SRk.endMin)} (⟲ = inflection: lagna or nakshatra change)</div>
-    <div class="ts" style="max-height:340px;overflow:auto"><table class="tbl"><thead><tr><th>Time</th><th>Lagna</th><th>Moon Rashi</th><th>Nakshatra</th><th>Sub Lord</th><th>Pada</th></tr></thead><tbody>${slotRows}</tbody></table></div>
+    <style>.t5m td,.t5m th{padding:2px 6px !important;font-size:11px;white-space:nowrap}</style>
+    <div class="ts" style="max-height:340px;overflow:auto"><table class="tbl t5m"><thead><tr><th>Time</th><th>Lagna</th><th>Lagna °</th><th>Moon Rashi</th><th>Moon °</th><th>Nakshatra</th><th>° in Nak</th><th>Sub Lord</th><th>Sub-Sub</th><th>Pada</th></tr></thead><tbody>${slotRows}</tbody></table></div>
+    ${padaLegend}
   </div>
+  ${window.kundaliExtras?window.kundaliExtras():''}
 </div>`;
 }
 
@@ -10650,29 +10672,33 @@ function tBhavphal(){
     </tbody></table></div></div>`;
 
   // ── ALL-PLANET ASPECT MATRIX — triangular aspectarian; same 0/45/90/135/180° method as the ☉–♃ panel ──
-  const ASPSET=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+  // Row order: luminaries+classics, Rahu & Ketu together, then Uranus/Neptune/Pluto together
+  const ASPSET=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu','Uranus','Neptune','Pluto'];
   const aspPl=ASPSET.map(n=>D.planets.find(p=>p.name===n)).filter(Boolean);
   // Solid aspect colours (readable on both dark & light); bg uses hex-alpha
-  const ASPHEX={0:'#d99a00',45:'#d97400',90:'#d83a54',135:'#8f66d6',180:'#1596b8'};
-  const AGLY={0:'☌',45:'∠',90:'□',135:'⚼',180:'☍'};
+  const GOODASP=[30,60,120,150,240,300,330];       // highlighted green
+  const ASPHEX={0:'#d99a00',45:'#d97400',90:'#d83a54',135:'#8f66d6',180:'#1596b8',270:'#e03131'};
+  GOODASP.forEach(a=>ASPHEX[a]='#0f9d58');
+  const AGLY={0:'☌',30:'⚺',45:'∠',60:'⚹',90:'□',120:'△',135:'⚼',150:'⚻',180:'☍',210:'',240:'△',270:'□',300:'⚹',330:'⚺'};
+  const ASPTGT=[0,30,45,60,90,120,135,150,180,240,270,300,330];
   const matHdr = aspPl.map(p=>`<th style="text-align:center;color:${pc(p.name)};font-weight:800">${p.abbr}</th>`).join('');
   const matRows = aspPl.map((a,i)=>{
     const cells = aspPl.map((b,j)=>{
-      if(j<=i) return `<td style="border:none;background:transparent"></td>`;
-      const sep=sjFold(a.lon-b.lon);
-      let near=0,best=1e9; [0,45,90,135,180].forEach(t=>{const o=Math.abs(sep-t); if(o<best){best=o;near=t;}});
-      if(best<=6){
+      if(j===i) return `<td style="border:none;background:transparent"></td>`;
+      const sep=n360(b.lon-a.lon);                 // directional: row → column, 0–360°
+      let near=0,best=1e9; ASPTGT.forEach(t=>{const o=Math.abs(sep-t); if(o<best){best=o;near=t;}});
+      if(best<=6 && ASPHEX[near]){
         const c=ASPHEX[near], alpha=best<=3?'3a':'1c';
-        return `<td style="text-align:center;background:${c}${alpha};border:1px solid ${c}88;padding:4px 3px">
-          <div style="color:var(--tx0);font-weight:800;font-size:12px">${sep.toFixed(1)}°</div>
-          <div style="color:${c};font-weight:800;font-size:11.5px">${AGLY[near]} ${near}°</div></td>`;
+        return `<td style="text-align:center;background:${c}${alpha};border:1px solid ${c}88;padding:3px 2px">
+          <div style="color:var(--tx0);font-weight:800;font-size:11.5px">${sep.toFixed(1)}°</div>
+          <div style="color:${c};font-weight:800;font-size:11px">${AGLY[near]||''} ${near}°</div></td>`;
       }
-      return `<td style="text-align:center;color:var(--tx3);font-weight:600;font-size:11.5px">${sep.toFixed(1)}°</td>`;
+      return `<td style="text-align:center;color:var(--tx3);font-weight:600;font-size:11px">${sep.toFixed(1)}°</td>`;
     }).join('');
     return `<tr><td style="color:${pc(a.name)};font-weight:800;white-space:nowrap;text-align:left">${a.abbr} <span style="font-weight:600">${a.name}</span></td>${cells}</tr>`;
   }).join('');
   const pairAspTable = `<div class="pnl"><div class="ph"><span class="dot"></span>⊞ ALL-PLANET ASPECT MATRIX — TODAY (${S.date}) TRANSIT</div>
-    <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">9 planets incl. Rahu/Ketu, geocentric. Each cell = angular separation (0–180°), highlighted when within 6° of a tracked aspect — <b style="color:#d99a00">☌ 0°</b> · <b style="color:#d97400">∠ 45°</b> · <b style="color:#d83a54">□ 90°</b> · <b style="color:#8f66d6">⚼ 135°</b> · <b style="color:#1596b8">☍ 180°</b>. Brighter = tight (≤3°). Upper triangle; same method as the ☉–♃ panel above.</div>
+    <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">12 bodies incl. Rahu·Ketu and Uranus·Neptune·Pluto. Each cell = <b>directional</b> separation row → column (0–360°), highlighted within 6° of a tracked aspect — <b style="color:#d99a00">☌ 0°</b> · <b style="color:#0f9d58">30 · 60 · 120 · 150 · 240 · 300 · 330° (auspicious, green)</b> · <b style="color:#d97400">∠ 45°</b> · <b style="color:#d83a54">□ 90°</b> · <b style="color:#8f66d6">⚼ 135°</b> · <b style="color:#1596b8">☍ 180°</b> · <b style="color:#e03131">□ 270° (red)</b>. Brighter = tight (≤3°).</div>
     <div class="ts"><table class="tbl" style="table-layout:fixed">
       <thead><tr><th></th>${matHdr}</tr></thead>
       <tbody>${matRows}</tbody>
@@ -12820,6 +12846,161 @@ window.tNumero=function(){
   </div>`;
 };
 
+// ═══════════════════════════════════════════════════════════════════
+// KUNDALI EXTRAS — Upagrahas · Shadbala · Bhava Bala · Rahu Kaal strip
+// (classical Vedic; appended under the Team Horoscope / kundali tab)
+// ═══════════════════════════════════════════════════════════════════
+const DEEP_EXALT={Sun:10,Moon:33,Mars:298,Mercury:165,Jupiter:95,Venus:357,Saturn:200};
+const DEEP_DEBIL={Sun:190,Moon:213,Mars:118,Mercury:345,Jupiter:275,Venus:177,Saturn:20};
+const NAISARGIKA={Sun:60,Moon:51.43,Venus:42.86,Jupiter:34.29,Mercury:25.71,Mars:17.14,Saturn:8.57};
+const SHAD_REQ={Sun:6.5,Moon:6.0,Mars:5.0,Mercury:7.0,Jupiter:6.5,Venus:5.5,Saturn:5.0};
+const BENEFIC=new Set(['Jupiter','Venus','Mercury','Moon']);
+const SHAD_BODIES=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
+function foldDeg(a){a=((a%360)+360)%360;return a>180?360-a:a;}
+// ascendant (sidereal) at a given local-clock minute on D's date
+function ascAtMin(min){
+  const dp=DATA.dateStr.split('-').map(Number);
+  const J=JD(dp[0],dp[1],dp[2],min/60);
+  return n360(computeAsc(J).asc-getAyanamsa(J,DATA.ayMode));
+}
+function computeUpagrahas(){
+  const D=DATA, wd=new Date(D.dateStr+'T00:00:00').getDay();
+  const rise=D.rMin, set=D.sMin, part=(set-rise)/8;
+  // Kaala-vela sons: ascendant at the start of each planet's day-portion
+  const partIndex=P=>((DAY_LORDS.indexOf(P)-wd+7)%7);   // 0..6, or 7=lordless(none)
+  const seg=P=>partIndex(P);
+  const out=[];
+  const mk=(name,planet,pos,note)=>{const idx=seg(planet);const startMin=rise+ (pos==='end'?(idx+1):idx)*part;const lon=ascAtMin(startMin);const sg=getSign(lon),nk=getNak(lon);out.push({name,planet,time:mtt(startMin),lon,sign:sg.sign,deg:sg.deg,nak:nk.n,house:houseOf(lon,D.ascSid),note});};
+  mk('Gulika','Saturn','start','Asc at start of Saturn\'s day-part — son of Saturn, key malefic point');
+  mk('Mandi','Saturn','end','Asc at end of Saturn\'s day-part (Maandi variant)');
+  mk('Kaala','Sun','start','Asc at start of Sun\'s part');
+  mk('Mrityu','Mars','start','Asc at start of Mars\'s part — mrityu point');
+  mk('Ardhaprahara','Mercury','start','Asc at start of Mercury\'s part');
+  mk('Yamaghantaka','Jupiter','start','Asc at start of Jupiter\'s part');
+  // Sphuta (Sun-longitude) upagrahas
+  const sun=D.planets.find(p=>p.name==='Sun').lon;
+  const dhuma=n360(sun+133+20/60);
+  const vyati=n360(360-dhuma);
+  const pari=n360(vyati+180);
+  const indra=n360(360-pari);
+  const upaketu=n360(indra+16+40/60);
+  [['Dhuma',dhuma,'Sun +133°20′ — smoky, obstacles'],['Vyatipata',vyati,'360−Dhuma — calamity point'],['Parivesha',pari,'Vyatipata +180° — halo, confusion'],['Indrachapa',indra,'360−Parivesha — rainbow, sudden gains'],['Upaketu',upaketu,'Indrachapa +16°40′ — comet, upheaval']].forEach(([n,l,note])=>{const sg=getSign(l),nk=getNak(l);out.push({name:n,planet:'—',time:'—',lon:l,sign:sg.sign,deg:sg.deg,nak:nk.n,house:houseOf(l,D.ascSid),note});});
+  return out;
+}
+function computeShadbala(){
+  const D=DATA, J=D.J;
+  const elong=foldDeg((D.planets.find(p=>p.name==='Sun').lon)-(D.planets.find(p=>p.name==='Moon').lon));
+  const nowMin=(D.timeIST||12)*60;
+  const isDay=nowMin>=D.rMin&&nowMin<=D.sMin;
+  // which third of the day/night we are in (for Tribhaga bala)
+  const dayLen=D.sMin-D.rMin;
+  const frac = isDay ? (nowMin-D.rMin)/dayLen : ((nowMin<D.rMin?nowMin+1440-D.sMin:nowMin-D.sMin)/(1440-dayLen));
+  const third=Math.min(2,Math.floor(frac*3));
+  const dayThirds=['Mercury','Sun','Saturn'], nightThirds=['Moon','Venus','Mars'];
+  const tribhagaLord = isDay?dayThirds[third]:nightThirds[third];
+  const male=['Sun','Jupiter','Mars'], female=['Moon','Venus'];
+  return SHAD_BODIES.map(name=>{
+    const p=D.planets.find(x=>x.name===name);
+    // ── STHANA BALA (positional, six sub-balas) ──
+    const uccha=foldDeg(p.lon-DEEP_DEBIL[name])/3;                       // 0..60
+    const st=signStatus(name,p.s).dig;
+    const saptaV = st==='Exalted'?45 : st==='Own sign'?30 : /Friend/.test(st)?22.5 : /Enemy/.test(st)?7.5 : st==='Debilitated'?3.75 : 15;
+    const oddSign=((p.s+1)%2)===1, oddNav=((getD9(p.lon)+1)%2)===1, wantEven=(name==='Moon'||name==='Venus');
+    let ojha=0; if(wantEven?!oddSign:oddSign)ojha+=15; if(wantEven?!oddNav:oddNav)ojha+=15;
+    const kendradi=[1,4,7,10].includes(p.h)?60:[2,5,8,11].includes(p.h)?30:15;
+    const dk=Math.floor(p.deg/10);
+    const drekkana=(male.includes(name)&&dk===0)||(female.includes(name)&&dk===2)||((name==='Mercury'||name==='Saturn')&&dk===1)?15:0;
+    const sthana=uccha+saptaV+ojha+kendradi+drekkana;
+    // ── DIG BALA (directional) ──
+    const strong={Sun:D.mcSid,Mars:D.mcSid,Moon:n360(D.mcSid+180),Venus:n360(D.mcSid+180),Mercury:D.ascSid,Jupiter:D.ascSid,Saturn:n360(D.ascSid+180)}[name];
+    const dig=foldDeg(p.lon-n360(strong+180))/3;                         // 0..60
+    // ── KAALA BALA (Nathonnata + Paksha + Tribhaga) ──
+    const diurnal=(name==='Sun'||name==='Jupiter'||name==='Venus');
+    const nath = name==='Mercury'?60 : diurnal?(isDay?60:15):(isDay?15:60);
+    let paksha = BENEFIC.has(name)? elong/3 : (180-elong)/3;             // 0..60
+    if(BENEFIC.has(name)) paksha=Math.min(60,paksha);
+    const tribhaga = (name==='Jupiter')?60 : (name===tribhagaLord?60:0);
+    const kaala=nath+paksha+tribhaga;
+    // ── CHESHTA BALA (motional) ──
+    let chesta;
+    if(name==='Sun'||name==='Moon'){ chesta = name==='Sun'? uccha : 40; }   // Sun uses ayana≈uccha proxy
+    else { const sp=planetSpeed(name,J); chesta = sp<0?55 : Math.max(10,Math.min(50, 45-Math.abs(sp)*5)); }
+    // ── NAISARGIKA (natural, fixed) ──
+    const nais=NAISARGIKA[name];
+    const totalV=sthana+dig+kaala+chesta+nais;
+    const rupas=totalV/60;
+    const req=SHAD_REQ[name];
+    return {name,sthana,dig,kaala,chesta,nais,totalV,rupas,req,ok:rupas>=req,ratio:rupas/req};
+  });
+}
+function computeBhavaBala(shad){
+  const D=DATA, ascIdx=Math.floor(D.ascSid/30);
+  const shadMap={}; shad.forEach(s=>shadMap[s.name]=s.rupas);
+  return Array.from({length:12},(_,i)=>{
+    const h=i+1, signIdx=(ascIdx+i)%12, lord=SLRD[signIdx];
+    const lordBala=shadMap[lord]||0;                                     // bhavadhipati bala (rupas)
+    const occ=D.planets.filter(p=>p.h===h);
+    let occB=0; occ.forEach(p=>{occB += BENEFIC.has(p.name)?0.5:-0.35;});
+    // Dig-ish: kendra houses get a small structural bonus
+    const kendra=[1,4,7,10].includes(h)?0.5:[5,9].includes(h)?0.35:0;
+    const total=Math.max(0,lordBala+occB+kendra);
+    return {h,sign:SIGNS[signIdx],lord,lordBala,occ:occ.map(p=>p.abbr),occB,kendra,total};
+  });
+}
+window.kundaliExtras=function(){
+  if(!DATA||!DATA.planets) return '';
+  const D=DATA, wd=new Date(D.dateStr+'T00:00:00').getDay();
+  // ── Rahu Kaal strip (reuse muhurat segment tables) ──
+  const rise=D.rMin,set=D.sMin,part=(set-rise)/8,noon=(rise+set)/2,abhi=(set-rise)/30;
+  const RK=[8,2,7,5,6,4,3],YM=[5,4,3,2,1,7,6],GK=[7,6,5,4,3,2,1];
+  const segT=i=>`${mtt(rise+(i-1)*part)}–${mtt(rise+i*part)}`;
+  const strip=`<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11.5px">
+    <span class="pill pb-r">Rahu Kaal ${segT(RK[wd])}</span>
+    <span class="pill pb-r">Yamaganda ${segT(YM[wd])}</span>
+    <span class="pill pb-r">Gulika Kaal ${segT(GK[wd])}</span>
+    <span class="pill pb-b">Abhijit ${mtt(noon-abhi)}–${mtt(noon+abhi)}</span>
+    <span class="pill pb-n">Sunrise ${mtt(rise)}</span><span class="pill pb-n">Sunset ${mtt(set)}</span>
+  </div>`;
+  // ── Upagrahas ──
+  const up=computeUpagrahas();
+  const upRows=up.map(u=>`<tr><td style="font-weight:700;color:var(--tx1)">${u.name}</td>
+    <td style="color:var(--tx3)">${u.planet}</td><td style="font-family:monospace">${u.time}</td>
+    <td>${u.sign} ${dmsC(u.deg)}</td><td style="text-align:center">H${u.house}</td>
+    <td style="color:var(--tx3)">${u.nak}</td><td style="font-size:10.5px;color:var(--tx3)">${u.note}</td></tr>`).join('');
+  // ── Shadbala ──
+  const shad=computeShadbala();
+  const shRows=shad.map(s=>`<tr><td style="font-weight:700;color:${pc(s.name)}">${s.name}</td>
+    <td style="text-align:right;font-family:monospace">${s.sthana.toFixed(1)}</td>
+    <td style="text-align:right;font-family:monospace">${s.dig.toFixed(1)}</td>
+    <td style="text-align:right;font-family:monospace">${s.kaala.toFixed(1)}</td>
+    <td style="text-align:right;font-family:monospace">${s.chesta.toFixed(1)}</td>
+    <td style="text-align:right;font-family:monospace">${s.nais.toFixed(1)}</td>
+    <td style="text-align:right;font-family:monospace;font-weight:800;color:var(--tx0)">${s.totalV.toFixed(0)}</td>
+    <td style="text-align:right;font-family:monospace;font-weight:800;color:${s.ok?'var(--bull)':'var(--bear)'}">${s.rupas.toFixed(2)}</td>
+    <td style="text-align:right;font-family:monospace;color:var(--tx3)">${s.req}</td>
+    <td style="text-align:center"><span class="pill ${s.ok?'pb-b':'pb-r'}">${s.ok?'STRONG':'WEAK'}</span></td></tr>`).join('');
+  const shadRank=[...shad].sort((a,b)=>b.rupas-a.rupas);
+  // ── Bhava Bala ──
+  const bb=computeBhavaBala(shad);
+  const bbRank=[...bb].sort((a,b)=>b.total-a.total);
+  const bbRows=bb.map(b=>`<tr><td style="font-weight:700">H${b.h}</td><td>${b.sign}</td>
+    <td style="color:${pc(b.lord)};font-weight:700">${b.lord}</td>
+    <td style="text-align:right;font-family:monospace">${b.lordBala.toFixed(2)}</td>
+    <td style="text-align:center;font-size:11px">${b.occ.join(' ')||'—'}</td>
+    <td style="text-align:right;font-family:monospace;font-weight:800;color:${b.total>=6?'var(--bull)':b.total<4?'var(--bear)':'var(--neut)'}">${b.total.toFixed(2)}</td></tr>`).join('');
+  return `
+  ${pnl('MUHURAT &amp; RAHU KAAL — '+['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][wd]+' · '+D.dateStr, strip)}
+  ${pnl('UPAGRAHAS (SHADOWY SUB-PLANETS)',`
+    <div class="ts"><table class="tbl"><thead><tr><th>Upagraha</th><th>Lord part</th><th>Time</th><th>Sidereal position</th><th>House</th><th>Nakshatra</th><th>Meaning</th></tr></thead><tbody>${upRows}</tbody></table></div>
+    <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">Kaala-vela upagrahas (Gulika, Mandi, Kaala, Mrityu, Ardhaprahara, Yamaghantaka) = ascendant rising at each planet's 1/8 portion of the day. Sphuta upagrahas (Dhuma…Upaketu) derive from the Sun's longitude.</div>`)}
+  ${pnl('SHADBALA — SIX-FOLD PLANETARY STRENGTH (virupas · 60 = 1 rupa)',`
+    <div class="ts"><table class="tbl"><thead><tr><th>Planet</th><th style="text-align:right">Sthana</th><th style="text-align:right">Dig</th><th style="text-align:right">Kaala</th><th style="text-align:right">Cheshta</th><th style="text-align:right">Naisargika</th><th style="text-align:right">Total V</th><th style="text-align:right">Rupas</th><th style="text-align:right">Req</th><th style="text-align:center">Verdict</th></tr></thead><tbody>${shRows}</tbody></table></div>
+    <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">Strongest → weakest: ${shadRank.map(s=>`<b style="color:${pc(s.name)}">${s.name}</b> ${s.rupas.toFixed(2)}`).join(' · ')}. Sthana = Uccha+Saptavargaja+Ojhayugma+Kendradi+Drekkana. Kaala = Nathonnata+Paksha+Tribhaga. Drik (aspectual) bala is omitted, so totals run slightly conservative vs full Shadbala. Verdict compares total rupas to the classical required minimum.</div>`)}
+  ${pnl('BHAVA BALA — HOUSE STRENGTH (rupas)',`
+    <div class="ts"><table class="tbl"><thead><tr><th>House</th><th>Sign</th><th>Lord</th><th style="text-align:right">Lord Shadbala</th><th style="text-align:center">Occupants</th><th style="text-align:right">Bhava Bala</th></tr></thead><tbody>${bbRows}</tbody></table></div>
+    <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">Bhava Bala ≈ house-lord Shadbala (Bhavadhipati bala) + benefic/malefic occupancy + kendra/trikona structural bonus. Strongest house: <b style="color:var(--bull)">H${bbRank[0].h} (${bbRank[0].total.toFixed(2)})</b> · weakest: <b style="color:var(--bear)">H${bbRank[bbRank.length-1].h} (${bbRank[bbRank.length-1].total.toFixed(2)})</b>.</div>`)}`;
+};
+
 // ── TAB: NUMBER RELATIONSHIPS — bonds across numerology systems ────
 // Vedic: planet lordship friendship (uses the engine's natRel table).
 // Chaldean: vibration families 1-2-4-7 · 3-6-9 · 5 (universal) · 8 (karmic).
@@ -13007,7 +13188,30 @@ window.tWorldClock=function(){
 // ── TABS: PLANET LATITUDE / LONGITUDE — pure ephemeris charts ──────
 // Replaces the old price-overlay charts: plots geoLat/geoLon from the
 // inlined VSOP87/ELP engine over a selectable window. No market data.
-const AL_BODIES=['Moon','Mercury','Venus','Mars','Jupiter','Saturn','Rahu'];
+// ── CHIRON — Keplerian ephemeris (JPL osculating elements, epoch 2020-Dec-17).
+// Good to a few arcminutes over ±decades: fine for chart lines.
+const CHIRON_EL={a:13.6976,e:0.37937,i:6.9308,O:209.2202,w:339.3922,M0:173.3437,n:0.019436,epoch:2459200.5};
+function chironGeo(J){
+  const el=CHIRON_EL;
+  const M=toR(n360(el.M0+el.n*(J-el.epoch)));
+  let E=M; for(let k=0;k<12;k++) E=E-(E-el.e*Math.sin(E)-M)/(1-el.e*Math.cos(E));
+  const xv=el.a*(Math.cos(E)-el.e), yv=el.a*Math.sqrt(1-el.e*el.e)*Math.sin(E);
+  const v=Math.atan2(yv,xv), r=Math.sqrt(xv*xv+yv*yv);
+  const O=toR(el.O), i=toR(el.i), wv=toR(el.w-el.O)+v;   // argument of latitude
+  const xh=r*(Math.cos(O)*Math.cos(wv)-Math.sin(O)*Math.sin(wv)*Math.cos(i));
+  const yh=r*(Math.sin(O)*Math.cos(wv)+Math.cos(O)*Math.sin(wv)*Math.cos(i));
+  const zh=r*Math.sin(wv)*Math.sin(i);
+  // Earth heliocentric (ecliptic of J2000 ≈ of date for this precision)
+  const sl=toR(geoLon('Sun',J));                          // geocentric Sun → Earth = +180°
+  const g=toR(n360(357.528+0.9856003*(J-2451545)));
+  const R=1.00014-0.01671*Math.cos(g)-0.00014*Math.cos(2*g);
+  const xe=-R*Math.cos(sl), ye=-R*Math.sin(sl);           // Earth helio = −(Sun geo)
+  const xg=xh-xe, yg=yh-ye, zg=zh;
+  const lon=n360(toD(Math.atan2(yg,xg)));
+  const lat=toD(Math.asin(zg/Math.sqrt(xg*xg+yg*yg+zg*zg)));
+  return {lon,lat};
+}
+const AL_BODIES=['Moon','Mercury','Venus','Mars','Jupiter','Saturn','Rahu','Uranus','Neptune','Pluto','Chiron'];
 // View state: t0/t1 = window edges in days relative to the selected date.
 window.ALV=window.ALV||{t0:-60,t1:120};
 window.alReset=function(){
@@ -13037,7 +13241,10 @@ function alSeries(mode){
     const pts=[];
     for(let d=v.t0;d<=v.t1+1e-9;d+=step){
       const J=J0+d;
-      pts.push({d, v: mode==='lat'?geoLat(b,J):n360(geoLon(b,J)-getAyanamsa(J,S.ayMode))});
+      let val;
+      if(b==='Chiron'){ const c=chironGeo(J); val = mode==='lat'?c.lat:n360(c.lon-getAyanamsa(J,S.ayMode)); }
+      else val = mode==='lat'?geoLat(b,J):n360(geoLon(b,J)-getAyanamsa(J,S.ayMode));
+      pts.push({d, v:val});
     }
     out[b]=pts;
   }
@@ -13060,7 +13267,7 @@ function alChart(mode){
       dstr+=(dstr===''||brk?'M':'L')+X(p.d).toFixed(1)+' '+Y(p.v).toFixed(1)+' ';
       prev=p.v;
     }
-    return`<path d="${dstr}" fill="none" stroke="${({Sun:'#ffb300',Moon:'#90caf9',Mercury:'#66bb6a',Venus:'#f48fb1',Mars:'#ef5350',Jupiter:'#ffa726',Saturn:'#78909c',Rahu:'#ab47bc'})[b]||'#888'}" stroke-width="1.6"/>`;
+    return`<path d="${dstr}" fill="none" stroke="${({Sun:'#ffb300',Moon:'#90caf9',Mercury:'#66bb6a',Venus:'#f48fb1',Mars:'#ef5350',Jupiter:'#ffa726',Saturn:'#78909c',Rahu:'#ab47bc',Uranus:'#4dd0e1',Neptune:'#7986cb',Pluto:'#b08968',Chiron:'#5fbf9f'})[b]||'#888'}" stroke-width="1.6"/>`;
   }).join('');
   const gridY=mode==='lat'
     ? [...Array(2*Math.abs(ymax)+1)].map((_,i)=>ymin+i).filter(v=>Number.isInteger(v))
