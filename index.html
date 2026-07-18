@@ -847,7 +847,27 @@ function computeAsc(J){
 // ═══════════════════════════════════════════════════════════════════
 // SUNRISE / SUNSET (Mumbai) — verified accurate to ~30s
 // ═══════════════════════════════════════════════════════════════════
+// Precise sunrise/sunset via the inlined Astronomy Engine (second-accurate,
+// includes refraction & the solar semidiameter). Cached per date+location.
+let _srCache={};
+function sunriseSunsetAE(dateStr){
+  if(typeof isAELoaded!=='function'||!isAELoaded()) return null;
+  const key=dateStr+'|'+LAT.toFixed(4)+'|'+LON.toFixed(4)+'|'+IST;
+  if(_srCache[key]) return _srCache[key];
+  try{
+    const A=window.Astronomy, obs=new A.Observer(LAT,LON,0);
+    const t0=new Date(Date.parse(dateStr+'T00:00:00Z')-IST*3600e3);  // local midnight, as UTC
+    const r=A.SearchRiseSet(A.Body.Sun,obs,+1,t0,1);
+    const s=A.SearchRiseSet(A.Body.Sun,obs,-1,t0,1);
+    if(!r||!s) return null;
+    const toMin=t=>{const d=new Date(t.date.getTime()+IST*3600e3);return ((d.getUTCHours()*60+d.getUTCMinutes()+d.getUTCSeconds()/60+d.getUTCMilliseconds()/60000)%1440+1440)%1440;};
+    const rise=toMin(r), set=toMin(s);
+    const out={rise,set,hl:(((set-rise)%1440+1440)%1440)/12};
+    _srCache[key]=out; return out;
+  }catch(e){ return null; }
+}
 function sunriseSunset(dateStr){
+  const ae=sunriseSunsetAE(dateStr); if(ae) return ae;   // second-accurate path
   const dp=dateStr.split('-').map(Number);
   const[yr,mo,dy]=dp;
   let Y=yr,M=mo;
@@ -12901,6 +12921,18 @@ function computeShadbala(){
   const dayThirds=['Mercury','Sun','Saturn'], nightThirds=['Moon','Venus','Mars'];
   const tribhagaLord = isDay?dayThirds[third]:nightThirds[third];
   const male=['Sun','Jupiter','Mars'], female=['Moon','Venus'];
+  // ── Drik (aspectual) bala prep: Vedic full-aspect houses per graha ──
+  const drishtiHouses=g=>g==='Mars'?[4,7,8]:g==='Jupiter'?[5,7,9]:g==='Saturn'?[3,7,10]:[7];
+  const drikOf=T=>{
+    let raw=0;
+    SHAD_BODIES.forEach(A=>{
+      if(A===T.name) return;
+      const ap=D.planets.find(x=>x.name===A);
+      const hd=((T.s-ap.s+12)%12)+1;                    // whole-sign house from aspector to target
+      if(drishtiHouses(A).includes(hd)) raw += (BENEFIC.has(A)?60:-60);
+    });
+    return raw/4;                                        // classical: net drishti-pinda /4 (signed)
+  };
   return SHAD_BODIES.map(name=>{
     const p=D.planets.find(x=>x.name===name);
     // ── STHANA BALA (positional, six sub-balas) ──
@@ -12929,10 +12961,12 @@ function computeShadbala(){
     else { const sp=planetSpeed(name,J); chesta = sp<0?55 : Math.max(10,Math.min(50, 45-Math.abs(sp)*5)); }
     // ── NAISARGIKA (natural, fixed) ──
     const nais=NAISARGIKA[name];
-    const totalV=sthana+dig+kaala+chesta+nais;
+    // ── DRIK (aspectual) ──
+    const drik=drikOf(p);
+    const totalV=sthana+dig+kaala+chesta+nais+drik;
     const rupas=totalV/60;
     const req=SHAD_REQ[name];
-    return {name,sthana,dig,kaala,chesta,nais,totalV,rupas,req,ok:rupas>=req,ratio:rupas/req};
+    return {name,sthana,dig,kaala,chesta,nais,drik,totalV,rupas,req,ok:rupas>=req,ratio:rupas/req};
   });
 }
 function computeBhavaBala(shad){
@@ -12977,6 +13011,7 @@ window.kundaliExtras=function(){
     <td style="text-align:right;font-family:monospace">${s.kaala.toFixed(1)}</td>
     <td style="text-align:right;font-family:monospace">${s.chesta.toFixed(1)}</td>
     <td style="text-align:right;font-family:monospace">${s.nais.toFixed(1)}</td>
+    <td style="text-align:right;font-family:monospace;color:${s.drik>=0?'var(--bull)':'var(--bear)'}">${s.drik>0?'+':''}${s.drik.toFixed(1)}</td>
     <td style="text-align:right;font-family:monospace;font-weight:800;color:var(--tx0)">${s.totalV.toFixed(0)}</td>
     <td style="text-align:right;font-family:monospace;font-weight:800;color:${s.ok?'var(--bull)':'var(--bear)'}">${s.rupas.toFixed(2)}</td>
     <td style="text-align:right;font-family:monospace;color:var(--tx3)">${s.req}</td>
@@ -12996,8 +13031,8 @@ window.kundaliExtras=function(){
     <div class="ts"><table class="tbl"><thead><tr><th>Upagraha</th><th>Lord part</th><th>Time</th><th>Sidereal position</th><th>House</th><th>Nakshatra</th><th>Meaning</th></tr></thead><tbody>${upRows}</tbody></table></div>
     <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">Kaala-vela upagrahas (Gulika, Mandi, Kaala, Mrityu, Ardhaprahara, Yamaghantaka) = ascendant rising at each planet's 1/8 portion of the day. Sphuta upagrahas (Dhuma…Upaketu) derive from the Sun's longitude.</div>`)}
   ${pnl('SHADBALA — SIX-FOLD PLANETARY STRENGTH (virupas · 60 = 1 rupa)',`
-    <div class="ts"><table class="tbl"><thead><tr><th>Planet</th><th style="text-align:right">Sthana</th><th style="text-align:right">Dig</th><th style="text-align:right">Kaala</th><th style="text-align:right">Cheshta</th><th style="text-align:right">Naisargika</th><th style="text-align:right">Total V</th><th style="text-align:right">Rupas</th><th style="text-align:right">Req</th><th style="text-align:center">Verdict</th></tr></thead><tbody>${shRows}</tbody></table></div>
-    <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">Strongest → weakest: ${shadRank.map(s=>`<b style="color:${pc(s.name)}">${s.name}</b> ${s.rupas.toFixed(2)}`).join(' · ')}. Sthana = Uccha+Saptavargaja+Ojhayugma+Kendradi+Drekkana. Kaala = Nathonnata+Paksha+Tribhaga. Drik (aspectual) bala is omitted, so totals run slightly conservative vs full Shadbala. Verdict compares total rupas to the classical required minimum.</div>`)}
+    <div class="ts"><table class="tbl"><thead><tr><th>Planet</th><th style="text-align:right">Sthana</th><th style="text-align:right">Dig</th><th style="text-align:right">Kaala</th><th style="text-align:right">Cheshta</th><th style="text-align:right">Naisargika</th><th style="text-align:right">Drik</th><th style="text-align:right">Total V</th><th style="text-align:right">Rupas</th><th style="text-align:right">Req</th><th style="text-align:center">Verdict</th></tr></thead><tbody>${shRows}</tbody></table></div>
+    <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">Strongest → weakest: ${shadRank.map(s=>`<b style="color:${pc(s.name)}">${s.name}</b> ${s.rupas.toFixed(2)}`).join(' · ')}. All six main balas: Sthana (Uccha+Saptavargaja+Ojhayugma+Kendradi+Drekkana), Dig, Kaala (Nathonnata+Paksha+Tribhaga), Cheshta, Naisargika, and Drik (net Vedic full-aspect drishti of benefics − malefics, ÷4; can be negative). Verdict compares total rupas to the classical required minimum.</div>`)}
   ${pnl('BHAVA BALA — HOUSE STRENGTH (rupas)',`
     <div class="ts"><table class="tbl"><thead><tr><th>House</th><th>Sign</th><th>Lord</th><th style="text-align:right">Lord Shadbala</th><th style="text-align:center">Occupants</th><th style="text-align:right">Bhava Bala</th></tr></thead><tbody>${bbRows}</tbody></table></div>
     <div style="font-size:10.5px;color:var(--tx3);padding:4px 12px">Bhava Bala ≈ house-lord Shadbala (Bhavadhipati bala) + benefic/malefic occupancy + kendra/trikona structural bonus. Strongest house: <b style="color:var(--bull)">H${bbRank[0].h} (${bbRank[0].total.toFixed(2)})</b> · weakest: <b style="color:var(--bear)">H${bbRank[bbRank.length-1].h} (${bbRank[bbRank.length-1].total.toFixed(2)})</b>.</div>`)}`;
