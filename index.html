@@ -4354,6 +4354,7 @@ function toggleTheme(){
 window.toggleTheme=toggleTheme;
 
 function render(){
+  if(window.syncVenueOffset) window.syncVenueOffset();   // DST-aware venue offset for the selected date
   try{DATA=computeAll(S.date,parseFloat(S.time)||9.25,S.ayMode);}
   catch(e){console.error('Compute error:',e);document.getElementById('MAIN').innerHTML='<div style="color:var(--bear);padding:20px">Error: '+e.message+'</div>';return;}
   rHdr();
@@ -12254,6 +12255,26 @@ function tzOffsetHours(iana, when){
   }catch(e){ return IST; }
 }
 function fmtOff(h){const s=h<0?'-':'+',a=Math.abs(h);return`UTC${s}${String(Math.floor(a)).padStart(2,'0')}:${String(Math.round((a%1)*60)).padStart(2,'0')}`;}
+// Instant representing the selected date (midday UTC — stable across DST edges)
+function selDateInstant(){ return new Date(Date.parse((S.date||'2026-01-01')+'T12:00:00Z')); }
+// DST status of a zone at a given instant: compare against Jan/Jul offsets.
+function dstInfo(z,when){
+  try{
+    const y=(when||new Date()).getUTCFullYear();
+    const oJan=tzOffsetHours(z,new Date(Date.UTC(y,0,15))), oJul=tzOffsetHours(z,new Date(Date.UTC(y,6,15)));
+    const cur=tzOffsetHours(z,when||new Date());
+    if(oJan===oJul) return {dst:false,uses:false,cur};
+    return {dst:cur===Math.max(oJan,oJul),uses:true,cur,std:Math.min(oJan,oJul)};
+  }catch(e){ return {dst:false,uses:false,cur:IST}; }
+}
+// Re-derive the venue UTC offset for the SELECTED DATE (auto DST: a July
+// match in New York uses EDT, a January match EST). Called on every render.
+window.syncVenueOffset=function(){
+  if(S&&S.venueZone){
+    const off=tzOffsetHours(S.venueZone, selDateInstant());
+    if(isFinite(off)) IST=off;
+  }
+};
 
 // ── VENUE SEARCH (header) — 3+ chars, worldwide, sets LAT/LON/offset ──
 function vsSearch(q){
@@ -12262,7 +12283,7 @@ function vsSearch(q){
 }
 window.vsPick=function(idx){
   const x=SLOC[idx]; if(!x) return;
-  LAT=x.la; LON=x.lo; IST=tzOffsetHours(x.z);
+  LAT=x.la; LON=x.lo; IST=tzOffsetHours(x.z, selDateInstant());
   const dd=document.getElementById('iVSdd'); if(dd) dd.style.display='none';
   gs({venueName:x.n, venueZone:x.z, venueInfo:x, loc:undefined});
 };
@@ -12923,14 +12944,38 @@ function lstHours(){ // local apparent sidereal time (mean) at LON for S.date+S.
   let g=280.46061837+360.98564736629*(J-2451545.0); g=n360(g);
   return n360(g+LON)/15;
 }
+window.wcAddZone=function(z){
+  if(!z) return;
+  try{ new Intl.DateTimeFormat('en-US',{timeZone:z}); }catch(e){ return; }   // validate
+  const cur=(S.wcZones||'').split('|').filter(Boolean);
+  if(!cur.includes(z)) cur.push(z);
+  gs({wcZones:cur.join('|')});
+};
+window.wcDelZone=function(z){
+  gs({wcZones:(S.wcZones||'').split('|').filter(x=>x&&x!==z).join('|')});
+};
 window.tWorldClock=function(){
   const D=DATA;
   const now=new Date();
+  const allZones=(Intl.supportedValuesOf?Intl.supportedValuesOf('timeZone'):[]);
+  const custom=(S.wcZones||'').split('|').filter(Boolean);
   const tzs=[['UTC','UTC'],['Venue',S.venueZone||'Asia/Kolkata'],['Your device',Intl.DateTimeFormat().resolvedOptions().timeZone],
-    ['London','Europe/London'],['New York','America/New_York'],['Dubai','Asia/Dubai'],['Mumbai','Asia/Kolkata'],['Sydney','Australia/Sydney'],['Tokyo','Asia/Tokyo']];
-  const rows=tzs.map(([lbl,z])=>{
+    ['London','Europe/London'],['New York','America/New_York'],['Dubai','Asia/Dubai'],['Mumbai','Asia/Kolkata'],['Sydney','Australia/Sydney'],['Tokyo','Asia/Tokyo'],
+    ...custom.map(z=>[z.split('/').pop().replace(/_/g,' '),z,true])];
+  const rows=tzs.map(([lbl,z,del])=>{
     let t='—'; try{t=new Intl.DateTimeFormat('en-GB',{timeZone:z,hour:'2-digit',minute:'2-digit',second:'2-digit',weekday:'short',day:'2-digit',month:'short'}).format(now);}catch(e){}
-    return`<tr><td style="color:var(--tx1);font-weight:700">${lbl}</td><td style="color:var(--tx3)">${z}</td><td style="font-family:monospace;color:var(--acc)">${t}</td><td style="font-family:monospace;color:var(--tx2)">${fmtOff(tzOffsetHours(z,now))}</td></tr>`;}).join('');
+    const di=dstInfo(z,now);
+    const dstCell=di.uses
+      ? (di.dst?'<span class="pill pb-b" style="font-size:9px">DST ACTIVE</span>':`<span class="pill pb-n" style="font-size:9px">standard</span>`)
+      : '<span style="color:var(--tx3);font-size:10px">no DST</span>';
+    return`<tr><td style="color:var(--tx1);font-weight:700">${lbl}</td><td style="color:var(--tx3)">${z}</td><td style="font-family:monospace;color:var(--acc)">${t}</td><td style="font-family:monospace;color:var(--tx2)">${fmtOff(di.cur)}</td><td style="text-align:center">${dstCell}</td><td>${del?`<button onclick="wcDelZone('${z}')" style="background:none;border:none;color:var(--bear);cursor:pointer">✕</button>`:''}</td></tr>`;}).join('');
+  const zonePicker=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+    <span class="cl">ADD ANY TIME ZONE (${allZones.length} built in)</span>
+    <input list="wcZoneList" id="wcZoneInp" class="ci" style="min-width:230px" placeholder="e.g. America/Los_Angeles">
+    <datalist id="wcZoneList">${allZones.map(z=>`<option value="${z}">`).join('')}</datalist>
+    <button onclick="wcAddZone(document.getElementById('wcZoneInp').value)" style="background:var(--bg3);color:var(--acc);border:1px solid var(--bd2);padding:4px 12px;border-radius:3px;cursor:pointer;font-family:inherit">+ Add</button>
+    <span style="font-size:10px;color:var(--tx3)">DST is applied automatically for every zone (IANA database via your browser)</span>
+  </div>`;
   // Moonrise / moonset via inlined Astronomy Engine
   let mr='—',ms='—';
   try{
@@ -12944,8 +12989,8 @@ window.tWorldClock=function(){
   }catch(e){}
   const lst=lstHours(), lh=Math.floor(lst), lm=Math.floor((lst-lh)*60), lsc=Math.floor((((lst-lh)*60)-lm)*60);
   const cm=parseFloat(S.time)*60, ph=(D.phpHours||[]).find(h=>cm>=h.sm&&cm<h.em);
-  return pnl(`WORLD TIME DASHBOARD — venue ${S.venueName||S.loc||'Mumbai'}`,
-    `<table class="tbl" style="width:100%"><thead><tr><th>ZONE</th><th>IANA</th><th>NOW</th><th>OFFSET</th></tr></thead><tbody>${rows}</tbody></table>`)+
+  return pnl(`WORLD TIME DASHBOARD — venue ${S.venueName||S.loc||'Mumbai'} ${fmtOff(IST)} (offset follows the selected match date — DST auto)`,
+    `<table class="tbl" style="width:100%"><thead><tr><th>ZONE</th><th>IANA</th><th>NOW</th><th>OFFSET</th><th style="text-align:center">DST</th><th></th></tr></thead><tbody>${rows}</tbody></table>${zonePicker}`)+
   pnl('VENUE ASTRONOMICAL CLOCK (at selected date/time)',`
     <div style="display:flex;gap:26px;flex-wrap:wrap;font-size:12.5px;color:var(--tx1);line-height:2.2">
       <span>☀ Sunrise <b style="color:var(--acc)">${mtt(D.rMin)}</b></span>
