@@ -12719,20 +12719,20 @@ window.tNumRel=function(){
   const exprA=pythName(nA), exprB=pythName(nB);
   // pair rows: label, numA, numB
   const rows=[];
-  if(NA.birth&&NB.birth)   rows.push(['Mulank A × Mulank B',NA.birth,NB.birth]);
-  if(NA.birth&&NB.destiny) rows.push(['Mulank A × Bhagyank B',NA.birth,NB.destiny]);
-  if(NA.destiny&&NB.birth) rows.push(['Bhagyank A × Mulank B',NA.destiny,NB.birth]);
-  if(NA.destiny&&NB.destiny)rows.push(['Bhagyank A × Bhagyank B',NA.destiny,NB.destiny]);
-  rows.push(['Name (Chaldean) A × B',NA.nameNum,NB.nameNum]);
-  rows.push(['Name (Pythagorean Expression) A × B',reduce1(exprA.num),reduce1(exprB.num)]);
-  if(NA.birth&&NA.nameNum) rows.push(['A internal: Mulank × Name',NA.birth,NA.nameNum]);
-  if(NB.birth&&NB.nameNum) rows.push(['B internal: Mulank × Name',NB.birth,NB.nameNum]);
+  if(NA.birth&&NB.birth)   rows.push(['Mulank A with Mulank B',NA.birth,NB.birth]);
+  if(NA.birth&&NB.destiny) rows.push(['Mulank A with Bhagyank B',NA.birth,NB.destiny]);
+  if(NA.destiny&&NB.birth) rows.push(['Bhagyank A with Mulank B',NA.destiny,NB.birth]);
+  if(NA.destiny&&NB.destiny)rows.push(['Bhagyank A with Bhagyank B',NA.destiny,NB.destiny]);
+  rows.push(['Name (Chaldean) A with B',NA.nameNum,NB.nameNum]);
+  rows.push(['Name (Pythagorean Expression) A with B',reduce1(exprA.num),reduce1(exprB.num)]);
+  if(NA.birth&&NA.nameNum) rows.push(['A internal: Mulank with Name',NA.birth,NA.nameNum]);
+  if(NB.birth&&NB.nameNum) rows.push(['B internal: Mulank with Name',NB.birth,NB.nameNum]);
   const bonds=rows.map(([lbl,a,b])=>({lbl,...numBond(a,b)}));
   const avg=bonds.length?Math.round(bonds.reduce((s,x)=>s+x.pct,0)/bonds.length):0;
   const badge=r=>`<span class="pill" style="background:transparent;border:1px solid ${relCol(r)};color:${relCol(r)};font-weight:700">${r}</span>`;
   const tableRows=bonds.map(x=>`<tr>
     <td style="color:var(--tx1);font-weight:700">${x.lbl}</td>
-    <td style="text-align:center;font-family:monospace;font-size:14px"><b style="color:${pc(NUM_PLANET[x.a])}">${x.a}</b> × <b style="color:${pc(NUM_PLANET[x.b])}">${x.b}</b></td>
+    <td style="text-align:center;font-family:monospace;font-size:14px"><b style="color:${pc(NUM_PLANET[x.a])}">${x.a}</b> ↔ <b style="color:${pc(NUM_PLANET[x.b])}">${x.b}</b></td>
     ${['Vedic','Chaldean','Pythagorean','LoShu'].map(k=>`<td style="text-align:center"><span title="${x.sys[k].note}" style="color:${relCol(x.sys[k].rel)};font-weight:700;cursor:help">${x.sys[k].rel}</span></td>`).join('')}
     <td style="text-align:center"><div style="font-family:monospace;font-weight:800;font-size:15px;color:${relCol(x.overall)}">${x.pct}%</div>
       <div class="sbar" style="height:4px"><div class="sbar-fill" style="width:${x.pct}%;background:${relCol(x.overall)}"></div></div></td>
@@ -12753,7 +12753,7 @@ window.tNumRel=function(){
   </div></div>
 
   <div class="pnl" style="border-color:${relCol(avg>=75?'FRIEND':avg<=40?'ENEMY':'NEUTRAL')}55">
-    <div class="ph"><span class="dot" style="background:${relCol(avg>=75?'FRIEND':avg<=40?'ENEMY':'NEUTRAL')}"></span>OVERALL BOND — ${nA} × ${nB}</div>
+    <div class="ph"><span class="dot" style="background:${relCol(avg>=75?'FRIEND':avg<=40?'ENEMY':'NEUTRAL')}"></span>OVERALL BOND — ${nA} ↔ ${nB}</div>
     <div class="pb" style="display:flex;gap:26px;align-items:center;flex-wrap:wrap">
       <div style="font-size:34px;font-weight:800;font-family:monospace;color:${relCol(avg>=75?'FRIEND':avg<=40?'ENEMY':'NEUTRAL')}">${avg}%</div>
       <div style="flex:1;min-width:220px"><div class="sbar"><div class="sbar-fill" style="width:${avg}%;background:${relCol(avg>=75?'FRIEND':avg<=40?'ENEMY':'NEUTRAL')}"></div></div>
@@ -12767,11 +12767,11 @@ window.tNumRel=function(){
     <tbody>${tableRows}</tbody></table></div>
     ${(!NA.birth||!NB.birth)?'<div style="font-size:10.5px;color:var(--neut);margin-top:6px">⚠ Enter both DOB / foundation dates to unlock the Mulank &amp; Bhagyank pairings.</div>':''}`)}
 
-  ${pnl('QUICK LOOKUP — any number × any number',`
+  ${pnl('QUICK LOOKUP — any number with any number',`
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-      ${qsel('nrQa')} <span style="color:var(--tx3)">×</span> ${qsel('nrQb')}
+      ${qsel('nrQa')} <span style="color:var(--tx3)">with</span> ${qsel('nrQb')}
       <span style="font-family:monospace;font-weight:800;font-size:18px;color:${relCol(q.overall)}">${q.pct}%</span> ${badge(q.overall)}
-      <span style="font-size:11px;color:var(--tx2)">${NUM_PLANET[qa]} × ${NUM_PLANET[qb]}</span>
+      <span style="font-size:11px;color:var(--tx2)">${NUM_PLANET[qa]} ↔ ${NUM_PLANET[qb]}</span>
     </div>
     <div class="ts"><table class="tbl"><thead><tr><th>System</th><th>Verdict</th><th>Why</th></tr></thead><tbody>
       ${['Vedic','Chaldean','Pythagorean','LoShu'].map(k=>`<tr><td style="color:var(--tx1);font-weight:700">${k}</td><td style="color:${relCol(q.sys[k].rel)};font-weight:700">${q.sys[k].rel}</td><td style="font-size:11.5px;color:var(--tx2)">${q.sys[k].note}</td></tr>`).join('')}
