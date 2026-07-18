@@ -3055,8 +3055,10 @@ function buildForecast(planets, aspects, rules, D, J){
 //   Everything feeds the per-index DAY forecast (reversal window, strong
 //   up/down). Nifty=Sun, BankNifty=Moon (Rule Indices.jpeg #20).
 // ═══════════════════════════════════════════════════════════════════
-const NIFTY_NATAL = { y:1992, mo:11, d:27, istH: 11 + 43/60,
-                      lat:19.0760, lon:72.8777, label:'DEFAULT EVENT CHART · 27-Nov-1992 · 11:43 IST · Mumbai — set your team\'s foundation date in Team Horoscope' };
+// Default natal: Indian cricket team — BCCI founded 4 Dec 1928, Mumbai
+// (time of founding unrecorded → solar noon used). Override via Team Horoscope.
+const NIFTY_NATAL = { y:1928, mo:12, d:4, istH: 12,
+                      lat:19.0760, lon:72.8777, label:'INDIA (BCCI) · 04-Dec-1928 · 12:00 IST · Mumbai — default; set your own team in Team Horoscope' };
 const BHADRA_LOKA = {0:'Swarga',1:'Swarga',2:'Swarga',7:'Swarga',
                      5:'Patala',6:'Patala',8:'Patala',9:'Patala',
                      3:'Prithvi',4:'Prithvi',10:'Prithvi',11:'Prithvi'};
